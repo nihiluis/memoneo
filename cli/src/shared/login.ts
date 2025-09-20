@@ -20,7 +20,7 @@ export async function performLogin(
   if (error || !success) {
     throw new Error(
       `Unable to auth using given mail and password due to: ${
-        errorMessage ?? "no error given"
+        errorMessage || "no error given"
       }.`
     )
   }

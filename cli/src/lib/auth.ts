@@ -122,6 +122,7 @@ export async function apiLogin(
   )
 
   if (error || !res.data.hasOwnProperty("token")) {
+    console.log("failed auth")
     return {
       success: false,
       token: "",
