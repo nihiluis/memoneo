@@ -1,7 +1,6 @@
-import { Client } from "@urql/core"
 import protect from "await-protect"
 import { AuthResult } from "../lib/auth.js"
-import { createGqlClient } from "../lib/gql.js"
+import { createApiClient, MemoneoApiClient } from "../lib/api.js"
 import {
   loadConfig,
   loadInternalConfig,
@@ -19,7 +18,7 @@ interface Prerequisites {
   auth: AuthResult
   cache: MemoneoFileCache
   key: CryptoKey
-  gqlClient: Client
+  gqlClient: MemoneoApiClient
 }
 
 export default async function loadPrerequisites(): Promise<Prerequisites> {
@@ -45,7 +44,7 @@ export default async function loadPrerequisites(): Promise<Prerequisites> {
     throw authValidationError ?? new Error("Unable to retrieve auth")
   }
 
-  const gqlClient = createGqlClient(auth.token, internalConfig!)
+  const gqlClient = createApiClient(auth.token)
 
   return { cache, key, auth, config, gqlClient, internalConfig }
 }

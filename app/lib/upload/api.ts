@@ -2,7 +2,7 @@ import enckey from "@/modules/enckey"
 import { RecordFileData } from "../audio/file"
 import { randomUUID } from "expo-crypto"
 import axios from "axios"
-import { getGqlWrapperUrl } from "../settings/urls"
+import { getApiUrl } from "../settings/urls"
 
 export async function uploadTranscript(
   token: string,
@@ -43,7 +43,7 @@ export async function uploadTranscript(
   try {
     console.log("Uploading note", note)
     const res = await axios.put(
-      getGqlWrapperUrl("/note"),
+      getApiUrl("/note"),
       note,
       {
         headers: {

@@ -13,6 +13,7 @@ type Auth interface {
 	CheckToken(token string) error
 	Login(string, string) (string, error)
 	PublicKey() interface{}
+	PublicJWK() map[string]string
 }
 
 type Config struct {

@@ -1,5 +1,4 @@
 import { Command } from "@oclif/core"
-import { Client } from "@urql/core"
 import { Note } from "./index.js"
 import { AuthResult } from "../../lib/auth.js"
 import { decryptText } from "../../lib/key.js"
@@ -12,6 +11,7 @@ import { writeNoteToFile } from "./write.js"
 import { SingleBar } from "cli-progress"
 import { promptConfirmation } from "../confirmation.js"
 import { formatNoteDate, limitTitleLength } from "./noteTitle.js"
+import { MemoneoApiClient } from "../../lib/api.js"
 
 interface DownloadNotesConfig {
   auth: AuthResult
@@ -20,7 +20,7 @@ interface DownloadNotesConfig {
   config: MemoneoConfig
   cache: MemoneoFileCache
   command: Command
-  gqlClient: Client
+  gqlClient: MemoneoApiClient
 }
 
 export async function downloadNotes({

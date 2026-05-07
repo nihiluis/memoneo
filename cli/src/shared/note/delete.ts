@@ -2,13 +2,13 @@ import { AuthResult } from "../../lib/auth.js"
 import { MemoneoConfig, MemoneoInternalConfig } from "../config.js"
 import { MemoneoFileCache } from "../fileCache.js"
 import { Command } from "@oclif/core"
-import { Client } from "@urql/core"
 import { NoteIdAndTitle } from "./index.js"
 import { cliUx } from "../../lib/reexports.js"
 import { MarkdownFileInfo } from "../../lib/files.js"
 import { ArchiveNotesMutation } from "./mutation.js"
 import { promptConfirmation } from "../confirmation.js"
 import { limitTitleLength } from "./noteTitle.js"
+import { MemoneoApiClient } from "../../lib/api.js"
 
 interface DeleteNotesConfig {
   auth: AuthResult
@@ -17,7 +17,7 @@ interface DeleteNotesConfig {
   config: MemoneoConfig
   cache: MemoneoFileCache
   command: Command
-  gqlClient: Client
+  gqlClient: MemoneoApiClient
 }
 
 export async function deleteRemovedNotes(

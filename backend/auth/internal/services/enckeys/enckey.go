@@ -2,9 +2,9 @@ package enckeys
 
 import (
 	"github.com/gofrs/uuid/v5"
+	"github.com/nihiluis/memoneo2/auth/internal/datastore"
+	"github.com/nihiluis/memoneo2/auth/internal/logger"
 	"github.com/nihiluis/memoneo2/auth/lib/models"
-	"github.com/nihiluis/memoneo2/core/lib/datastore"
-	"github.com/nihiluis/memoneo2/core/lib/logger"
 )
 
 // Enckeys struct holds all the dependencies required for the keypairs package. And exposes all services

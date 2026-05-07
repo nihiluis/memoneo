@@ -4,12 +4,12 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/nihiluis/memoneo2/auth/internal/api"
 	"github.com/nihiluis/memoneo2/auth/internal/configs"
-	"github.com/nihiluis/memoneo2/auth/internal/services/auth/keycloak"
+	"github.com/nihiluis/memoneo2/auth/internal/datastore"
+	"github.com/nihiluis/memoneo2/auth/internal/logger"
+	"github.com/nihiluis/memoneo2/auth/internal/server"
+	postgresauth "github.com/nihiluis/memoneo2/auth/internal/services/auth/postgres"
 	"github.com/nihiluis/memoneo2/auth/internal/services/enckeys"
-	"github.com/nihiluis/memoneo2/auth/internal/services/users"
-	"github.com/nihiluis/memoneo2/core/lib/datastore"
-	"github.com/nihiluis/memoneo2/core/lib/logger"
-	"github.com/nihiluis/memoneo2/core/lib/server/http"
+	authmodels "github.com/nihiluis/memoneo2/auth/lib/models"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +22,6 @@ func main() {
 	logger := logger.NewService()
 	configs := configs.NewService()
 
-	keycloakConfig := configs.Keycloak()
 	pgConfig := configs.Datastore()
 	authConfig := configs.Auth()
 	httpConfig := configs.HTTP()
@@ -34,27 +33,25 @@ func main() {
 	}
 	defer datastore.DB.Close()
 
-	keycloak, err := keycloak.NewService(logger, datastore, keycloakConfig)
+	authService, err := postgresauth.NewService(logger, datastore, authConfig)
 	if err != nil {
-		logger.Zap.Panicw("Unable to load keycloak service", zap.Error(err))
+		logger.Zap.Panicw("Unable to load auth service", zap.Error(err))
 	}
 
 	enckeys, err := enckeys.NewService(logger, datastore)
 	if err != nil {
 		logger.Zap.Panicw("Unable to load enckeys service", zap.Error(err))
 	}
-
-	users, err := users.NewService(logger, datastore, keycloak)
-	if err != nil {
-		logger.Zap.Panicw("Unable to load users service", zap.Error(err))
+	if err := datastore.CreateSchema([]interface{}{(*authmodels.Enckey)(nil)}); err != nil {
+		logger.Zap.Panicw("Unable to create auth schema", zap.Error(err))
 	}
 
-	server, err := http.NewEchoService(logger, httpConfig)
+	server, err := server.NewEchoService(logger, httpConfig)
 	if err != nil {
 		logger.Zap.Panicw("Unable to load http server", zap.Error(err))
 	}
 
-	api, err := api.NewService(logger, keycloak, apiConfig, authConfig, users, enckeys)
+	api, err := api.NewService(logger, authService, apiConfig, authConfig, enckeys)
 	if err != nil {
 		logger.Zap.Panicw("Unable to load api service", zap.Error(err))
 	}

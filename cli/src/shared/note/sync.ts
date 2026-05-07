@@ -1,5 +1,4 @@
 import { Command } from "@oclif/core"
-import { Client } from "@urql/core"
 import dayjs, { Dayjs } from "dayjs"
 import { Note } from "./index.js"
 import { AuthResult } from "../../lib/auth.js"
@@ -14,6 +13,7 @@ import { SingleBar } from "cli-progress"
 import { limitTitleLength } from "./noteTitle.js"
 import { promptConfirmation } from "../confirmation.js"
 import { cliUx } from "../../lib/reexports.js"
+import { MemoneoApiClient } from "../../lib/api.js"
 
 interface SyncNotesConfig {
   notes: Note[]
@@ -24,7 +24,7 @@ interface SyncNotesConfig {
   config: MemoneoConfig
   cache: MemoneoFileCache
   command: Command
-  gqlClient: Client
+  gqlClient: MemoneoApiClient
 }
 
 interface MarkdownFileSyncData {
@@ -276,7 +276,7 @@ async function writeUpdatedNotesFromLocalToRemote(
   config: MemoneoConfig,
   auth: AuthResult,
   key: CryptoKey,
-  gqlClient: Client
+  gqlClient: MemoneoApiClient
 ): Promise<WriteResult> {
   const outdatedLocalNotes = mdFileData.filter(data => !!data.outdatedType)
 

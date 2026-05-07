@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/rsa"
 	"net/http"
 	"time"
 
@@ -9,15 +10,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/nihiluis/memoneo2/auth/internal/logger"
+	archhttp "github.com/nihiluis/memoneo2/auth/internal/server"
 	"github.com/nihiluis/memoneo2/auth/internal/services/auth"
 	"github.com/nihiluis/memoneo2/auth/internal/services/enckeys"
-	"github.com/nihiluis/memoneo2/auth/internal/services/users"
 	authmodels "github.com/nihiluis/memoneo2/auth/lib/models"
 	"github.com/nihiluis/memoneo2/auth/lib/utils"
-	"github.com/nihiluis/memoneo2/core/lib/logger"
-	"github.com/nihiluis/memoneo2/core/lib/models"
-	archhttp "github.com/nihiluis/memoneo2/core/lib/server/http"
-	"github.com/nihiluis/memoneo2/core/lib/server/http/middleware"
 )
 
 var validate *validator.Validate
@@ -26,7 +24,6 @@ type API struct {
 	auth          auth.Auth
 	config        *Config
 	authConfig    *auth.Config
-	users         *users.Users
 	enckeys       *enckeys.Enckeys
 	logger        *logger.Logger
 	validate      *validator.Validate
@@ -38,12 +35,12 @@ type Config struct {
 }
 
 func NewService(logger *logger.Logger, auth auth.Auth, config *Config, authConfig *auth.Config,
-	users *users.Users, enckeys *enckeys.Enckeys) (*API, error) {
+	enckeys *enckeys.Enckeys) (*API, error) {
 	validate := validator.New()
 
 	publicKey := auth.PublicKey()
 
-	return &API{auth, config, authConfig, users, enckeys, logger, validate, publicKey}, nil
+	return &API{auth, config, authConfig, enckeys, logger, validate, publicKey}, nil
 }
 
 // AddHandlers adds the echo handlers that are part of this package.
@@ -56,16 +53,12 @@ func (api *API) AddHandlers(s *archhttp.EchoServer) {
 
 	signingKey := api.authPublicKey
 
-	cookieMiddleware := middleware.UserCookieAuth(api.logger)
-	authMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey:    signingKey,
-		SigningMethod: jwt.SigningMethodRS256.Name,
-		ErrorHandlerWithContext: func(err error, c echo.Context) error {
-			api.logger.Zap.Debugw("Unable to verify token", "errMessage", err.Error())
-
-			return c.JSON(http.StatusUnauthorized, echo.Map{"message": "token is invalid"})
-		},
-	})
+	publicKey, ok := signingKey.(*rsa.PublicKey)
+	if !ok {
+		panic("auth public key must be RSA")
+	}
+	cookieMiddleware := userCookieAuth(api.logger)
+	authMiddleware := jwtAuth(publicKey, api.logger)
 
 	authGroup := s.Echo.Group("/auth")
 	authGroup.Use(cookieMiddleware)
@@ -73,8 +66,10 @@ func (api *API) AddHandlers(s *archhttp.EchoServer) {
 
 	s.Echo.GET("/publickey", api.getAuthPublicKey)
 	s.Echo.POST("/login", api.login)
+	s.Echo.POST("/signup", api.register)
 	s.Echo.POST("/register", api.register)
 	s.Echo.GET("/logout", api.logout)
+	s.Echo.GET("/.well-known/jwks.json", api.getJWKS)
 	authGroup.GET("", api.checkAuth)
 	authGroup.POST("/password", api.changePassword)
 
@@ -93,7 +88,11 @@ type LoginRequestBody struct {
 }
 
 func (api *API) getAuthPublicKey(c echo.Context) error {
-	return c.JSON(http.StatusOK, echo.Map{"publicKey": api.authPublicKey})
+	return c.JSON(http.StatusOK, echo.Map{"publicKey": api.auth.PublicJWK()})
+}
+
+func (api *API) getJWKS(c echo.Context) error {
+	return c.JSON(http.StatusOK, echo.Map{"keys": []map[string]string{api.auth.PublicJWK()}})
 }
 
 func (api *API) login(c echo.Context) error {
@@ -115,12 +114,7 @@ func (api *API) login(c echo.Context) error {
 		return err
 	}
 
-	dataUser, err := api.users.GetDataUserByAuthID(authUser.ID)
-	if err != nil {
-		return err
-	}
-
-	enckey, err := api.enckeys.GetEnckey(dataUser.ID)
+	enckey, err := api.enckeys.GetEnckey(authUser.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Unable to retrieve user data."})
 	}
@@ -128,8 +122,9 @@ func (api *API) login(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":      token,
 		"enckey":     enckey,
-		"userId":     dataUser.ID,
+		"userId":     authUser.ID,
 		"authUserId": authUser.ID,
+		"mail":       authUser.Mail,
 	})
 }
 
@@ -149,7 +144,7 @@ func (api *API) logout(c echo.Context) error {
 }
 
 func (api *API) performLogin(c echo.Context, mail string, password string) (string, error) {
-	token, err := api.users.Login(mail, password)
+	token, err := api.auth.Login(mail, password)
 	if err != nil {
 		return "", err
 	}
@@ -172,7 +167,8 @@ func (api *API) performLogin(c echo.Context, mail string, password string) (stri
 
 // RegisterRequestBody is the JSON body of a request to the register handler.
 type RegisterRequestBody struct {
-	User     *authmodels.FullUser `json:"user" validate:"required"`
+	User     *authmodels.FullUser `json:"user"`
+	Mail     string               `json:"mail"`
 	Password string               `json:"password" validate:"required"`
 }
 
@@ -187,6 +183,12 @@ func (api *API) register(c echo.Context) error {
 	}
 
 	user := body.User
+	if user == nil {
+		user = &authmodels.FullUser{Mail: body.Mail}
+	}
+	if user.Mail == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{"message": "mail is required"})
+	}
 	api.logger.Zap.Infow("Handling registration attempt", "user", user)
 
 	authUser := &auth.User{
@@ -195,19 +197,17 @@ func (api *API) register(c echo.Context) error {
 		Mail:      user.Mail,
 		Password:  body.Password,
 	}
-	dataUser := &models.User{}
-
-	authUser, dataUser, err = api.users.CreateUser(authUser, dataUser)
+	authUser, err = api.auth.CreateUser(authUser)
 	if err != nil {
 		api.logger.Zap.Debugw("Failed to create user", "user", user, "err", err)
 		return err
 	}
 
-	user = utils.MergeUser(authUser, dataUser)
+	user = utils.MergeUser(authUser)
 
 	token, err := api.performLogin(c, user.Mail, body.Password)
 
-	return c.JSON(http.StatusOK, echo.Map{"token": token, "user": user, "userId": user.ID})
+	return c.JSON(http.StatusOK, echo.Map{"token": token, "user": user, "userId": authUser.ID, "mail": authUser.Mail})
 }
 
 // ChangePasswordRequestBody is the JSON body of a request to the changePassword handler.
@@ -236,7 +236,9 @@ func (api *API) changePassword(c echo.Context) error {
 
 	api.logger.Zap.Infow("Handling password change", "user_id", id)
 
-	api.auth.ChangePassword(id, body.Password)
+	if err := api.auth.ChangePassword(id, body.Password); err != nil {
+		return err
+	}
 
 	newToken, err := api.performLogin(c, mail, body.Password)
 	if err != nil {
@@ -260,20 +262,19 @@ func (api *API) checkAuth(c echo.Context) error {
 		return err
 	}
 
-	authUser := &auth.User{
-		FirstName: firstName,
-		LastName:  lastName,
-		Mail:      mail,
-	}
-
-	dataUser, err := api.users.GetDataUserByAuthID(id)
+	authUser, err := api.auth.GetUserByID(id)
 	if err != nil {
-		return err
+		authUser = &auth.User{
+			ID:        id,
+			FirstName: firstName,
+			LastName:  lastName,
+			Mail:      mail,
+		}
 	}
 
-	fullUser := utils.MergeUser(authUser, dataUser)
+	fullUser := utils.MergeUser(authUser)
 
-	enckey, err := api.enckeys.GetEnckey(dataUser.ID)
+	enckey, err := api.enckeys.GetEnckey(id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Unable to retrieve user data."})
 	}
@@ -281,7 +282,7 @@ func (api *API) checkAuth(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"token":      token.Raw,
 		"enckey":     enckey,
-		"userId":     dataUser.ID,
+		"userId":     id,
 		"authUserId": id,
 		"user":       fullUser,
 		"mail":       mail,
@@ -316,14 +317,9 @@ func (api *API) saveEnckey(c echo.Context) error {
 		return err
 	}
 
-	dataUser, err := api.users.GetDataUserByAuthID(id)
-	if err != nil {
-		return err
-	}
-
 	enckey := &authmodels.Enckey{
 		Key:  body.Key,
-		ID:   dataUser.ID,
+		ID:   id,
 		Salt: body.Salt,
 	}
 
@@ -349,12 +345,7 @@ func (api *API) getEnckey(c echo.Context) error {
 		return err
 	}
 
-	dataUser, err := api.users.GetDataUserByAuthID(id)
-	if err != nil {
-		return err
-	}
-
-	enckey, err := api.enckeys.GetEnckey(dataUser.ID)
+	enckey, err := api.enckeys.GetEnckey(id)
 	if err != nil {
 		return err
 	}

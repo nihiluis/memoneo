@@ -51,9 +51,9 @@ export async function loadConfig(): Promise<MemoneoConfig> {
         dev: "http://localhost:8089",
         prod: "https://auth.memoneo2.yourdomain.com",
       },
-      masterApiUrl: {
+      apiUrl: {
         dev: "http://localhost:8094",
-        prod: "https://master.memoneo2.yourdomain.com",
+        prod: "https://api.memoneo2.yourdomain.com",
       },
     }
     await fs.writeFile("./config.json", JSON.stringify(defaultConfig), {

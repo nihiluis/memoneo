@@ -24,7 +24,7 @@ Building the CLI requires a `config.json` file in your working directory with de
     "dev": "http://localhost:8089",
     "prod": "https://your.prod.instance.com"
   },
-  "masterApiUrl": {
+  "apiUrl": {
     "dev": "http://localhost:8094",
     "prod": "https://your.prod.instance.com"
   }

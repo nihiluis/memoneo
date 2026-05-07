@@ -7,10 +7,7 @@
 			"path": "backend/auth"
 		},
 		{
-			"path": "backend/master"
-		},
-		{
-			"path": "backend/core"
+			"path": "backend/api"
 		}
 	],
 	"settings": {}

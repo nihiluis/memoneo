@@ -1,5 +1,4 @@
 import { Command } from "@oclif/core"
-import { Client } from "@urql/core"
 import { SingleBar } from "cli-progress"
 import { Note, NoteFileData } from "./index.js"
 import { AuthResult } from "../../lib/auth.js"
@@ -14,6 +13,7 @@ import { writeNoteToFile } from "./write.js"
 import { isValidFilename } from "./file.js"
 import { limitTitleLength } from "./noteTitle.js"
 import { promptConfirmation } from "../confirmation.js"
+import { MemoneoApiClient } from "../../lib/api.js"
 
 interface UploadNewNotesConfig {
   mdFiles: MarkdownFileInfo[]
@@ -23,7 +23,7 @@ interface UploadNewNotesConfig {
   config: MemoneoConfig
   cache: MemoneoFileCache
   command: Command
-  gqlClient: Client
+  gqlClient: MemoneoApiClient
   existingNotes: Note[]
 }
 

@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 volumes:
   memoneo2_data:
@@ -16,7 +16,6 @@ services:
   postgres_data:
     image: postgres
     volumes:
-      - ./pginit.sh:/docker-entrypoint-initdb.d/initdb.sh
       - memoneo2_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${DATA_DB_NAME}
@@ -25,81 +24,24 @@ services:
     networks:
       - net
     ports:
-      - 5433:5432
-  memocloak:
-    depends_on:
-      - postgres_data
-    networks:
-      - net
-      - traefik
-    restart: always
-    labels:
-      - docker-volume-backup.stop-during-backup=true
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.memocloak.rule=Host(`keycloak.memoneo2.yourdomain.com`)'
-      - 'traefik.http.routers.memocloak.entrypoints=https'
-      - 'traefik.http.routers.memocloak.tls=true'
-        #- 'traefik.http.routers.memocloak.middlewares=authelia@docker'
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.memocloak.tls.certresolver=myresolver"
-    image: quay.io/keycloak/keycloak:latest
-    environment:
-      DB_VENDOR: POSTGRES
-      DB_ADDR: postgres_data
-      DB_DATABASE: ${KEYCLOAK_DB_NAME}
-      DB_USER: ${DATA_DB_USER}
-      DB_SCHEMA: public
-      DB_PASSWORD: ${DATA_DB_PASSWORD}
-        #KEYCLOAK_USER: ${KEYCLOAK_ADMIN_USER}
-        #KEYCLOAK_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      PROXY_ADDRESS_FORWARDING: "true"
-    ports:
-      - 8099:8080
-    depends_on:
-      - postgres_data
-  memohasura:
-    image: hasura/graphql-engine:v2.0.10
-    ports:
-      - "8098:8080"
-    depends_on:
-      - postgres_data
-    networks:
-      - net
-      - traefik
-    restart: always
-    labels:
-      - docker-volume-backup.stop-during-backup=true
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.memohasura.rule=Host(`hasura.memoneo2.yourdomain.com`)'
-      - 'traefik.http.routers.memohasura.entrypoints=https'
-      - 'traefik.http.routers.memohasura.tls=true'
-        #- 'traefik.http.routers.memohasura.middlewares=authelia@docker'
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.memohasura.tls.certresolver=myresolver"
-    environment:
-      HASURA_GRAPHQL_DATABASE_URL: postgres://${DATA_DB_USER}:${DATA_DB_PASSWORD}@postgres_data:5432/${DATA_DB_NAME}
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-      HASURA_GRAPHQL_DEV_MODE: "true"
-      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_SECRET_KEY}
-      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"
+      - "5433:5432"
+
   auth:
     build:
-      context: ./sources/backend
+      context: .
       dockerfile: ./auth/Dockerfile
     container_name: auth
     depends_on:
       - postgres_data
-      - memocloak
     networks:
       - net
       - traefik
     labels:
       - docker-volume-backup.stop-during-backup=true
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.memoauth.rule=Host(`auth.memoneo2.yourdomain.com`)'
-      - 'traefik.http.routers.memoauth.entrypoints=https'
-      - 'traefik.http.routers.memoauth.tls=true'
+      - "traefik.enable=true"
+      - "traefik.http.routers.memoauth.rule=Host(`auth.memoneo2.yourdomain.com`)"
+      - "traefik.http.routers.memoauth.entrypoints=https"
+      - "traefik.http.routers.memoauth.tls=true"
       - "traefik.docker.network=traefik_net"
       - "traefik.http.routers.memoauth.tls.certresolver=myresolver"
     environment:
@@ -110,74 +52,40 @@ services:
       - DB_STORE=${DATA_DB_NAME}
       - DB_USER=${DATA_DB_USER}
       - DB_PASSWORD=${DATA_DB_PASSWORD}
-      - KEYCLOAK_ADMIN_USER=${KEYCLOAK_ADMIN_USER}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KEYCLOAK_HOST=http://memocloak
-      - KEYCLOAK_PORT=8080
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
-      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      - KEYCLOAK_REALM_NAME=${KEYCLOAK_REALM_NAME}
-      - KEYCLOAK_KID=${AUTH_KID}
       - AUTH_COOKIE_DOMAIN=yourdomain.com
-      - AUTH_KEYCLOAK_KID=${AUTH_KID}
+      - AUTH_JWT_KID=${AUTH_KID}
       - AUTH_JWT_SIGNING_KEY=${AUTH_JWT_SIGNING_KEY}
     ports:
-      - '5002:8089'
+      - "5002:8089"
     restart: unless-stopped
-  master:
+
+  api:
     build:
-      context: ./sources/backend
-      dockerfile: ./master/Dockerfile
-    container_name: master
+      context: ./api
+      dockerfile: ./Dockerfile
+    container_name: api
     depends_on:
       - postgres_data
+      - auth
     networks:
       - net
       - traefik
     labels:
       - docker-volume-backup.stop-during-backup=true
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.memomaster.rule=Host(`master.memoneo2.yourdomain.com`)'
-      - 'traefik.http.routers.memomaster.entrypoints=https'
-      - 'traefik.http.routers.memomaster.tls=true'
+      - "traefik.enable=true"
+      - "traefik.http.routers.memoapi.rule=Host(`api.memoneo2.yourdomain.com`)"
+      - "traefik.http.routers.memoapi.entrypoints=https"
+      - "traefik.http.routers.memoapi.tls=true"
       - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.memomaster.tls.certresolver=myresolver"
+      - "traefik.http.routers.memoapi.tls.certresolver=myresolver"
     environment:
-      - ALLOW_ORIGINS=https://localhost:3000|http://localhost:8080|https://web.memoneo2.yourdomain.com
-      - PORT=8087
+      - PORT=8073
+      - AUTH_API_URL=http://auth:8089
       - DB_HOST=postgres_data
       - DB_PORT=5432
       - DB_STORE=${DATA_DB_NAME}
       - DB_USER=${DATA_DB_USER}
       - DB_PASSWORD=${DATA_DB_PASSWORD}
-      - HASURA_GQL_ENDPOINT_URL=http://memohasura:8080/v1/graphql
-      - HASURA_SECRET_KEY=${HASURA_SECRET_KEY}
-      - HASURA_RELAY_ENDPOINT_URL=http://memohasura:8080/v1beta1/relay
-      - AUTH_URL=http://auth:8089
     ports:
-      - '5013:8087'
-    restart: unless-stopped
-  web:
-    build:
-      context: ./sources/frontend/web
-      dockerfile: ./Dockerfile
-    container_name: web
-    depends_on:
-      - postgres_data
-    networks:
-      - net
-      - traefik
-    labels:
-      - docker-volume-backup.stop-during-backup=true
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.web.rule=Host(`web.memoneo2.yourdomain.com`)'
-      - 'traefik.http.routers.web.entrypoints=https'
-      - 'traefik.http.routers.web.tls=true'
-      - "traefik.http.routers.web.middlewares=authelia@docker"
-      - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.web.tls.certresolver=myresolver"
-    environment:
-      - AUTH_URL=http://auth:8089
-    ports:
-      - '5014:3000'
+      - "5013:8073"
     restart: unless-stopped

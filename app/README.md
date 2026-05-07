@@ -10,15 +10,14 @@ The app is built with Expo, React Native, Nativewind (Tailwind for React Native)
 - Node/NPM
 - Expo CLI
 - Android Studio for the enckey Android-specific module
-- Memoneo auth, master and gqlwrapper services (from this repo)
+- Memoneo auth and api services (from this repo)
 - [Transcription API](https://github.com/nihiluis/transcription-api)
 
 The API urls must be set in the .env.local file
 ```bash
 EXPO_PUBLIC_AUTH_BASE_URL=http://api.yoururl.com
-EXPO_PUBLIC_MASTER_BASE_URL=http://api.yoururl.com
+EXPO_PUBLIC_API_BASE_URL=http://api.yoururl.com
 EXPO_PUBLIC_TRANSCRIBE_BASE_URL=http://api.yoururl.com
-EXPO_PUBLIC_GQL_WRAPPER_BASE_URL=http://api.yoururl.com
 ```
 
 ## Development
