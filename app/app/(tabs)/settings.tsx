@@ -16,6 +16,7 @@ export default function SettingsScreen() {
       isAuthenticated: false,
       isLoading: false,
       user: { id: "", mail: "" },
+      enckey: null,
       error: "",
     })
   }

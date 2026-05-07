@@ -1,4 +1,4 @@
 import { PauseCircle } from "lucide-react-native"
 import { iconWithClassName } from "./helper"
-iconWithClassName(PauseCircle)
-export { PauseCircle }
+const StyledPauseCircle = iconWithClassName(PauseCircle)
+export { StyledPauseCircle as PauseCircle }

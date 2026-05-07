@@ -1,4 +1,4 @@
 import { Mic } from "lucide-react-native"
 import { iconWithClassName } from "./helper"
-iconWithClassName(Mic)
-export { Mic }
+const StyledMic = iconWithClassName(Mic)
+export { StyledMic as Mic }

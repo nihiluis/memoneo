@@ -1,4 +1,4 @@
 import { PlayCircle } from "lucide-react-native"
 import { iconWithClassName } from "./helper"
-iconWithClassName(PlayCircle)
-export { PlayCircle }
+const StyledPlayCircle = iconWithClassName(PlayCircle)
+export { StyledPlayCircle as PlayCircle }

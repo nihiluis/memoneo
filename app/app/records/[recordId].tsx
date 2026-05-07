@@ -6,11 +6,12 @@ import MView from "@/components/reusables/MView"
 import MRootView from "@/components/ui/MRootView"
 import {
   getRecordMetadata,
+  RecordFileDataWithMetadata,
   RecordFileMetadata,
   updateMetadata,
 } from "@/lib/audio/file"
 import { Stack, useLocalSearchParams } from "expo-router"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Alert } from "react-native"
 import { isAvailableAsync, shareAsync } from "expo-sharing"
 import { pollTranscription, queueTranscription } from "@/lib/transcribe"
@@ -24,6 +25,8 @@ export default function RecordScreen() {
   const auth = useAtomValue(authAtom)
   const { recordId } = useLocalSearchParams()
   const [metadata, setMetadata] = useState<RecordFileMetadata | null>(null)
+  const [recordFileData, setRecordFileData] =
+    useState<RecordFileDataWithMetadata | null>(null)
   const [pendingTranscription, setPendingTranscription] =
     useState<boolean>(false)
 
@@ -31,13 +34,17 @@ export default function RecordScreen() {
     metadata?.transcribe.status === "COMPLETED" &&
     metadata?.transcribe.text.length > 0
 
-  const recordFileData = useMemo(() => {
-    if (!recordId) return null
+  useEffect(() => {
+    if (!recordId) {
+      setRecordFileData(null)
+      setMetadata(null)
+      return
+    }
 
-    const fileData = getRecordMetadata(recordId as string)
-    setMetadata(fileData.metadata)
-
-    return fileData
+    getRecordMetadata(recordId as string).then(fileData => {
+      setRecordFileData(fileData)
+      setMetadata(fileData.metadata)
+    })
   }, [recordId])
 
   const openRecordExternally = useCallback(async () => {
@@ -87,7 +94,7 @@ export default function RecordScreen() {
       if (!recordFileData) return
       if (pendingTranscription) return
 
-      updateMetadata(uri, newMetadata)
+      await updateMetadata(uri, newMetadata)
       setMetadata(newMetadata)
     },
     [recordFileData, pendingTranscription]
@@ -100,7 +107,7 @@ export default function RecordScreen() {
     try {
       const id = await transcribeMutation.mutateAsync(recordFileData.uri)
 
-      syncMetadata(recordFileData.uri, {
+      await syncMetadata(recordFileData.uri, {
         transcribe: { id, text: "", status: "QUEUED" },
       })
       setPendingTranscription(true)
@@ -109,7 +116,7 @@ export default function RecordScreen() {
         const finalResult = await pollTranscription(id)
 
         console.log("transcribe finalResult", finalResult)
-        syncMetadata(recordFileData.uri, {
+        await syncMetadata(recordFileData.uri, {
           transcribe: {
             id,
             text: finalResult.text ?? "",
@@ -118,7 +125,7 @@ export default function RecordScreen() {
         })
       } catch (error) {
         console.error("Failed to poll transcription", error)
-        syncMetadata(recordFileData.uri, {
+        await syncMetadata(recordFileData.uri, {
           transcribe: {
             id,
             text: "",

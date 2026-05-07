@@ -1,4 +1,4 @@
 import { Pause } from "lucide-react-native"
 import { iconWithClassName } from "./helper"
-iconWithClassName(Pause)
-export { Pause }
+const StyledPause = iconWithClassName(Pause)
+export { StyledPause as Pause }

@@ -1,4 +1,4 @@
-import { Paths, Directory, File } from "expo-file-system/next"
+import { Paths, Directory, File } from "expo-file-system"
 import { TranscriptionStatus } from "../transcribe"
 
 export interface RecordFileMetadata {
@@ -28,13 +28,13 @@ export function createMetadataFile(file: File) {
   metadataFile.write(JSON.stringify(data))
 }
 
-export function updateMetadata(
+export async function updateMetadata(
   uri: string,
   metadata: RecordFileMetadata
 ) {
   const metadataFile = new File(uri.replace(".m4a", ".json"))
 
-  const existingMetadata = JSON.parse(metadataFile.text()) as RecordFileMetadata
+  const existingMetadata = JSON.parse(await metadataFile.text()) as RecordFileMetadata
 
   const newMetadata: RecordFileMetadata = { ...metadata }
   console.log("writing newMetadata", newMetadata)
@@ -54,9 +54,9 @@ export type RecordFileDataWithMetadata = RecordFileData & {
   metadata: RecordFileMetadata
 }
 
-export function getRecordMetadata(
+export async function getRecordMetadata(
   filename: string
-): RecordFileDataWithMetadata {
+): Promise<RecordFileDataWithMetadata> {
   const recordDir = getRecordDir()
   const file = new File(recordDir, filename)
 
@@ -68,7 +68,7 @@ export function getRecordMetadata(
 
   const metadataFile = new File(recordDir, filename.split(".")[0] + ".json")
 
-  const metadata = JSON.parse(metadataFile.text()) as RecordFileMetadata
+  const metadata = JSON.parse(await metadataFile.text()) as RecordFileMetadata
 
   return {
     filename: file.name,

@@ -1,5 +1,4 @@
 import axios from "axios"
-import { File as ExpoFile } from "expo-file-system/next"
 import { z } from "zod"
 
 const StatusSchema = z.enum(["QUEUED", "FAILED", "COMPLETED", "UNINITIALIZED"])

@@ -1,4 +1,4 @@
 import { ChevronUp } from "lucide-react-native"
 import { iconWithClassName } from "./helper"
-iconWithClassName(ChevronUp)
-export { ChevronUp }
+const StyledChevronUp = iconWithClassName(ChevronUp)
+export { StyledChevronUp as ChevronUp }

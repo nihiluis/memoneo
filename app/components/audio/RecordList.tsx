@@ -55,7 +55,6 @@ export function RecordList() {
         style={{ minHeight: 1 }}>
         <FlashList
           data={recordFiles}
-          estimatedItemSize={87}
           keyExtractor={item => item.uri}
           renderItem={({ item }) => (
             <RecordItem
