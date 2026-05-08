@@ -54,6 +54,8 @@ services:
       - DB_PASSWORD=${DATA_DB_PASSWORD}
       - AUTH_COOKIE_DOMAIN=yourdomain.com
       - AUTH_JWT_KID=${AUTH_KID}
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER}
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE}
       - AUTH_JWT_SIGNING_KEY=${AUTH_JWT_SIGNING_KEY}
     ports:
       - "5002:8089"
@@ -81,6 +83,8 @@ services:
     environment:
       - PORT=8073
       - AUTH_API_URL=http://auth:8089
+      - AUTH_JWT_ISSUER=${AUTH_JWT_ISSUER}
+      - AUTH_JWT_AUDIENCE=${AUTH_JWT_AUDIENCE}
       - DB_HOST=postgres_data
       - DB_PORT=5432
       - DB_STORE=${DATA_DB_NAME}

@@ -1,0 +1,18 @@
+{
+  "name": "@memoneo/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.24.0",
+  "scripts": {
+    "app": "pnpm --filter @memoneo/app",
+    "cli": "pnpm --filter @memoneo/cli",
+    "build:cli": "pnpm --filter @memoneo/cli build",
+    "lint:app": "pnpm --filter @memoneo/app lint",
+    "test:cli": "pnpm --filter @memoneo/cli test"
+  },
+  "pnpm": {
+    "overrides": {
+      "lightningcss": "1.30.1"
+    }
+  }
+}

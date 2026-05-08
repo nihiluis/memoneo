@@ -6,8 +6,11 @@ type TestConfigs struct{}
 
 func (cfg *TestConfigs) Auth() (*auth.Config, error) {
 	return &auth.Config{
-		JWTSigningKey:    "",
-		Kid:              "test",
-		AuthCookieDomain: "",
+		JWTSigningKey:            "",
+		Kid:                      "test",
+		Issuer:                   "memoneo-auth-test",
+		Audience:                 "memoneo-test",
+		AuthCookieDomain:         "",
+		AllowGeneratedSigningKey: true,
 	}, nil
 }

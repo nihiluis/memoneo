@@ -1,15 +1,19 @@
 package datastore
 
 import (
+	"context"
+	"database/sql"
 	"os"
 	"strings"
 
-	"github.com/go-pg/pg/v10"
-	"github.com/go-pg/pg/v10/orm"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/migrate"
 )
 
 type Datastore struct {
-	DB *pg.DB
+	DB *bun.DB
 }
 
 func NewService(cfg *Config) (*Datastore, error) {
@@ -18,19 +22,23 @@ func NewService(cfg *Config) (*Datastore, error) {
 		databaseURL = cfg.ConnURL()
 	}
 
-	opt, err := pg.ParseURL(databaseURL)
-	if err != nil {
+	sqlDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(databaseURL)))
+	db := bun.NewDB(sqlDB, pgdialect.New())
+
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 
-	return &Datastore{DB: pg.Connect(opt)}, nil
+	return &Datastore{DB: db}, nil
 }
 
-func (datastore *Datastore) CreateSchema(models []interface{}) error {
-	for _, model := range models {
-		if err := datastore.DB.Model(model).CreateTable(&orm.CreateTableOptions{IfNotExists: true}); err != nil {
-			return err
-		}
+func (datastore *Datastore) RunMigrations(ctx context.Context, migrations *migrate.Migrations) error {
+	migrator := migrate.NewMigrator(datastore.DB, migrations)
+	if err := migrator.Init(ctx); err != nil {
+		return err
 	}
-	return nil
+
+	_, err := migrator.Migrate(ctx)
+	return err
 }

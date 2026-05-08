@@ -1,0 +1,27 @@
+{
+  "name": "@memoneo/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm run openapi:types && tsc -p tsconfig.json",
+    "preopenapi:types": "pnpm run openapi:copy",
+    "openapi:copy": "cp ../../../backend/api/openapi.json ./openapi.json && cd ../../../backend/auth && go run github.com/swaggo/swag/v2/cmd/swag init --v3.1 --parseInternal --outputTypes go,json --output docs && cp docs/swagger.json ../../frontend/packages/shared/auth-openapi.json",
+    "openapi:types": "openapi-typescript ./openapi.json -o ./src/openapi-types.ts && openapi-typescript ./auth-openapi.json -o ./src/auth-openapi-types.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.14.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.10.1",
+    "typescript": "^5.5.4"
+  }
+}

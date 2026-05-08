@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -28,12 +29,8 @@ type Postgres struct {
 }
 
 func NewService(logger *logger.Logger, datastore *datastore.Datastore, config *auth.Config) (*Postgres, error) {
-	privateKey, err := parsePrivateKey(config.JWTSigningKey)
+	privateKey, err := parsePrivateKey(config.JWTSigningKey, config.AllowGeneratedSigningKey)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := datastore.CreateSchema([]interface{}{(*User)(nil)}); err != nil {
 		return nil, err
 	}
 
@@ -74,7 +71,7 @@ func (p *Postgres) CreateUser(user *auth.User) (*auth.User, error) {
 		LastName:     user.LastName,
 	}
 
-	_, err = p.datastore.DB.Model(dbUser).Insert()
+	_, err = p.datastore.DB.NewInsert().Model(dbUser).Exec(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +80,7 @@ func (p *Postgres) CreateUser(user *auth.User) (*auth.User, error) {
 }
 
 func (p *Postgres) DeleteUser(user *auth.User) error {
-	_, err := p.datastore.DB.Model((*User)(nil)).Where("id = ?", user.ID).Delete()
+	_, err := p.datastore.DB.NewDelete().Model((*User)(nil)).Where("id = ?", user.ID).Exec(context.Background())
 	return err
 }
 
@@ -93,19 +90,19 @@ func (p *Postgres) ChangePassword(userID uuid.UUID, password string) error {
 		return err
 	}
 
-	_, err = p.datastore.DB.Model((*User)(nil)).
+	_, err = p.datastore.DB.NewUpdate().Model((*User)(nil)).
 		Set("password_hash = ?", string(passwordHash)).
 		Set("updated_at = now()").
 		Where("id = ?", userID).
-		Update()
+		Exec(context.Background())
 	return err
 }
 
 func (p *Postgres) GetUserByMail(mail string) (*auth.User, error) {
 	dbUser := new(User)
-	err := p.datastore.DB.Model(dbUser).
+	err := p.datastore.DB.NewSelect().Model(dbUser).
 		Where("mail = ?", strings.ToLower(strings.TrimSpace(mail))).
-		Select()
+		Scan(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +111,7 @@ func (p *Postgres) GetUserByMail(mail string) (*auth.User, error) {
 
 func (p *Postgres) GetUserByID(id uuid.UUID) (*auth.User, error) {
 	dbUser := new(User)
-	err := p.datastore.DB.Model(dbUser).Where("id = ?", id).Select()
+	err := p.datastore.DB.NewSelect().Model(dbUser).Where("id = ?", id).Scan(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -123,9 +120,9 @@ func (p *Postgres) GetUserByID(id uuid.UUID) (*auth.User, error) {
 
 func (p *Postgres) Login(mail string, password string) (string, error) {
 	dbUser := new(User)
-	err := p.datastore.DB.Model(dbUser).
+	err := p.datastore.DB.NewSelect().Model(dbUser).
 		Where("mail = ?", strings.ToLower(strings.TrimSpace(mail))).
-		Select()
+		Scan(context.Background())
 	if err != nil {
 		return "", err
 	}
@@ -137,6 +134,8 @@ func (p *Postgres) Login(mail string, password string) (string, error) {
 	now := time.Now()
 	claims := jwt.MapClaims{
 		"sub":         dbUser.ID.String(),
+		"iss":         p.config.Issuer,
+		"aud":         p.config.Audience,
 		"email":       dbUser.Mail,
 		"given_name":  dbUser.FirstName,
 		"family_name": dbUser.LastName,
@@ -150,12 +149,13 @@ func (p *Postgres) Login(mail string, password string) (string, error) {
 }
 
 func (p *Postgres) CheckToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if token.Method.Alg() != jwt.SigningMethodRS256.Alg() {
 			return nil, errors.New("unexpected signing method")
 		}
 		return p.publicKey, nil
-	})
+	}, jwt.WithIssuer(p.config.Issuer), jwt.WithAudience(p.config.Audience))
 	if err != nil {
 		return err
 	}
@@ -174,9 +174,12 @@ func authUserFromDB(dbUser *User) *auth.User {
 	}
 }
 
-func parsePrivateKey(rawKey string) (*rsa.PrivateKey, error) {
+func parsePrivateKey(rawKey string, allowGenerated bool) (*rsa.PrivateKey, error) {
 	key := strings.TrimSpace(rawKey)
 	if key == "" {
+		if !allowGenerated {
+			return nil, errors.New("AUTH_JWT_SIGNING_KEY is required")
+		}
 		return rsa.GenerateKey(rand.Reader, 2048)
 	}
 

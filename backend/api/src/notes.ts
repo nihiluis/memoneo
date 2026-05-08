@@ -20,8 +20,8 @@ export const noteFileDataSchema = z.object({
   note_id: z.string().uuid().optional(),
 })
 
-export type NoteInput = z.infer<typeof noteInputSchema>
-export type NoteFileDataInput = z.infer<typeof noteFileDataSchema>
+export type NoteInput = z.input<typeof noteInputSchema>
+export type NoteFileDataInput = z.input<typeof noteFileDataSchema>
 
 export function serializeNote(row: any) {
   return {
@@ -53,8 +53,8 @@ export function toNoteRow(input: NoteInput, userId: string) {
     body: input.body,
     bodyIv: input.body_iv,
     date: new Date(input.date),
-    archived: input.archived,
-    version: input.version,
+    archived: input.archived ?? false,
+    version: input.version ?? 1,
     updatedAt: new Date(),
   }
 }

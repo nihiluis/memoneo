@@ -5,9 +5,6 @@
 		},
 		{
 			"path": "backend/auth"
-		},
-		{
-			"path": "backend/api"
 		}
 	],
 	"settings": {}

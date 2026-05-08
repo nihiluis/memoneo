@@ -1,0 +1,63 @@
+{
+  "name": "@memoneo/cli",
+  "version": "0.0.0",
+  "description": "oclif example Hello World CLI",
+  "author": "Alex Smith @nihiluis",
+  "type": "module",
+  "scripts": {
+    "prebuild": "pnpm --filter @memoneo/shared build",
+    "build": "rimraf dist && tsc -b",
+    "build:sync": "pnpm run build && node ./bin/dev.js sync",
+    "build:upload": "pnpm run build && node ./bin/dev.js upload",
+    "build:download": "pnpm run build && node ./bin/dev.js download",
+    "postpack": "shx rm -f oclif.manifest.json",
+    "memoneo": "node ./bin/run.js",
+    "sync": "node ./bin/run.js sync",
+    "upload": "node ./bin/run.js upload",
+    "download": "node ./bin/run.js download",
+    "delete": "node ./bin/run.js delete",
+    "test": "vitest run"
+  },
+  "bin": {
+    "cli": "./bin/run"
+  },
+  "homepage": "https://github.com/nihiluis/cliv2",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "dependencies": {
+    "@inquirer/prompts": "^5.3.6",
+    "@memoneo/shared": "workspace:*",
+    "@oclif/core": "^4.0.17",
+    "@oclif/plugin-help": "^6",
+    "@oclif/plugin-plugins": "^5",
+    "ansi-colors": "^4.1.3",
+    "await-protect": "^1.0.17",
+    "cli-progress": "^3.12.0",
+    "dayjs": "^1.11.12",
+    "detect-newline": "4.0.1",
+    "dotenv": "^16.4.5",
+    "rimraf": "^6.0.1",
+    "uuid": "^10.0.0",
+    "vitest": "^3.0.5",
+    "yaml": "^2.5.0"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "tslib": "^2.6.3",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4"
+  },
+  "oclif": {
+    "bin": "memoneo",
+    "dirname": "memoneo",
+    "commands": "./dist/commands",
+    "plugins": [],
+    "topicSeparator": " "
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "types": "dist/index.d.ts"
+}

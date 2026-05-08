@@ -7,6 +7,8 @@ export const DATABASE_URL =
 
 export const ENDPOINT_AUTH_URL = `${AUTH_API_URL}/auth`
 export const JWKS_URL = `${AUTH_API_URL}/.well-known/jwks.json`
+export const AUTH_JWT_ISSUER = process.env.AUTH_JWT_ISSUER ?? "memoneo-auth"
+export const AUTH_JWT_AUDIENCE = process.env.AUTH_JWT_AUDIENCE ?? "memoneo"
 
 export const PORT = process.env.PORT || 8073
 

@@ -44,9 +44,12 @@ func (cfg *Configs) Auth() *auth.Config {
 	}
 
 	return &auth.Config{
-		JWTSigningKey:    os.Getenv("AUTH_JWT_SIGNING_KEY"),
-		Kid:              kid,
-		AuthCookieDomain: os.Getenv("AUTH_COOKIE_DOMAIN"),
+		JWTSigningKey:            os.Getenv("AUTH_JWT_SIGNING_KEY"),
+		Kid:                      kid,
+		Issuer:                   envWithDefault("AUTH_JWT_ISSUER", "memoneo-auth"),
+		Audience:                 envWithDefault("AUTH_JWT_AUDIENCE", "memoneo"),
+		AuthCookieDomain:         os.Getenv("AUTH_COOKIE_DOMAIN"),
+		AllowGeneratedSigningKey: os.Getenv("AUTH_ALLOW_EPHEMERAL_JWT_SIGNING_KEY") == "true",
 	}
 }
 
@@ -68,4 +71,12 @@ func (cfg *Configs) Datastore() *datastore.Config {
 // NewService returns an instance of Config with all the required dependencies initialized
 func NewService() *Configs {
 	return &Configs{}
+}
+
+func envWithDefault(key string, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	return value
 }

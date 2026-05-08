@@ -16,6 +16,9 @@ func userCookieAuth(logger *logger.Logger) echo.MiddlewareFunc {
 			if req.Header.Get("Authorization") != "" {
 				return next(c)
 			}
+			if req.Method != http.MethodGet && req.Method != http.MethodHead && req.Method != http.MethodOptions {
+				return next(c)
+			}
 
 			cookie, err := c.Cookie("token")
 			if err != nil || cookie.Value == "" {
@@ -28,7 +31,7 @@ func userCookieAuth(logger *logger.Logger) echo.MiddlewareFunc {
 	}
 }
 
-func jwtAuth(publicKey *rsa.PublicKey, logger *logger.Logger) echo.MiddlewareFunc {
+func jwtAuth(publicKey *rsa.PublicKey, issuer string, audience string, logger *logger.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
@@ -37,9 +40,10 @@ func jwtAuth(publicKey *rsa.PublicKey, logger *logger.Logger) echo.MiddlewareFun
 				return c.JSON(http.StatusUnauthorized, echo.Map{"message": "token is invalid"})
 			}
 
-			token, err := jwt.Parse(authHeader[len(prefix):], func(token *jwt.Token) (interface{}, error) {
+			claims := jwt.MapClaims{}
+			token, err := jwt.ParseWithClaims(authHeader[len(prefix):], claims, func(token *jwt.Token) (interface{}, error) {
 				return publicKey, nil
-			}, jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}))
+			}, jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}), jwt.WithIssuer(issuer), jwt.WithAudience(audience))
 			if err != nil || !token.Valid {
 				if err != nil {
 					logger.Zap.Debugw("Unable to verify token", "errMessage", err.Error())

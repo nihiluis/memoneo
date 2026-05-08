@@ -1,7 +1,0 @@
-export const InsertNoteMutation = "InsertNoteMutation"
-export const UpdateNoteMutation = "UpdateNoteMutation"
-export const ArchiveNoteMutation = "ArchiveNoteMutation"
-export const DeleteNotesMutation = "DeleteNotesMutation"
-export const ArchiveNotesMutation = "ArchiveNotesMutation"
-export const InsertNoteFileDataMutation = "InsertNoteFileDataMutation"
-export const UpdateNoteFileDataMutation = "UpdateNoteFileDataMutation"

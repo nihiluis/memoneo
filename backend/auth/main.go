@@ -1,18 +1,28 @@
 package main
 
 import (
+	"context"
+
 	"github.com/joho/godotenv"
+	_ "github.com/nihiluis/memoneo2/auth/docs"
 	"github.com/nihiluis/memoneo2/auth/internal/api"
 	"github.com/nihiluis/memoneo2/auth/internal/configs"
 	"github.com/nihiluis/memoneo2/auth/internal/datastore"
 	"github.com/nihiluis/memoneo2/auth/internal/logger"
+	"github.com/nihiluis/memoneo2/auth/internal/migrations"
 	"github.com/nihiluis/memoneo2/auth/internal/server"
 	postgresauth "github.com/nihiluis/memoneo2/auth/internal/services/auth/postgres"
 	"github.com/nihiluis/memoneo2/auth/internal/services/enckeys"
-	authmodels "github.com/nihiluis/memoneo2/auth/lib/models"
 	"go.uber.org/zap"
 )
 
+// @title Memoneo Auth API
+// @version 0.0.0
+// @description Memoneo authentication and encrypted key API.
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -33,6 +43,10 @@ func main() {
 	}
 	defer datastore.DB.Close()
 
+	if err := datastore.RunMigrations(context.Background(), migrations.Migrations); err != nil {
+		logger.Zap.Panicw("Unable to run auth migrations", zap.Error(err))
+	}
+
 	authService, err := postgresauth.NewService(logger, datastore, authConfig)
 	if err != nil {
 		logger.Zap.Panicw("Unable to load auth service", zap.Error(err))
@@ -41,9 +55,6 @@ func main() {
 	enckeys, err := enckeys.NewService(logger, datastore)
 	if err != nil {
 		logger.Zap.Panicw("Unable to load enckeys service", zap.Error(err))
-	}
-	if err := datastore.CreateSchema([]interface{}{(*authmodels.Enckey)(nil)}); err != nil {
-		logger.Zap.Panicw("Unable to create auth schema", zap.Error(err))
 	}
 
 	server, err := server.NewEchoService(logger, httpConfig)

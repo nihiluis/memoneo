@@ -17,9 +17,12 @@ type Auth interface {
 }
 
 type Config struct {
-	JWTSigningKey    string
-	Kid              string
-	AuthCookieDomain string
+	JWTSigningKey            string
+	Kid                      string
+	Issuer                   string
+	Audience                 string
+	AuthCookieDomain         string
+	AllowGeneratedSigningKey bool
 }
 
 // User represents the data that is necessary to authenticate a user with the apps.

@@ -1,5 +1,5 @@
-import { Elysia } from "elysia"
-import { swagger } from "@elysiajs/swagger"
+import { Elysia, t } from "elysia"
+import { openapi } from "@elysia/openapi"
 import { PORT } from "./env.js"
 import { verifyAuthorization } from "./auth.js"
 import {
@@ -8,12 +8,70 @@ import {
   deleteNotes,
   listNoteIds,
   listNotes,
-  noteFileDataSchema,
-  noteInputSchema,
   updateNote,
   upsertNoteFile,
   upsertNotes,
 } from "./notes.js"
+
+const authHeadersSchema = t.Object({
+  authorization: t.Optional(t.String()),
+})
+
+const noteIdParamsSchema = t.Object({
+  id: t.String({ format: "uuid" }),
+})
+
+const noteFileDataSchemaBody = t.Object({
+  title: t.String({ minLength: 1 }),
+  path: t.String({ minLength: 1 }),
+  note_id: t.Optional(t.String({ format: "uuid" })),
+})
+
+const noteInputSchemaBody = t.Object({
+  id: t.String({ format: "uuid" }),
+  user_id: t.Optional(t.String({ format: "uuid" })),
+  title: t.String({ minLength: 1 }),
+  body: t.String(),
+  body_iv: t.String(),
+  date: t.String(),
+  archived: t.Optional(t.Boolean()),
+  version: t.Optional(t.Number({ minimum: 1 })),
+})
+
+const idsBodySchema = t.Object({
+  ids: t.Array(t.String({ format: "uuid" })),
+})
+
+const noteFileDataResponseSchema = t.Object({
+  note_id: t.Optional(t.String()),
+  title: t.String(),
+  path: t.String(),
+})
+
+const noteResponseSchema = t.Object({
+  id: t.String(),
+  user_id: t.String(),
+  title: t.String(),
+  body: t.String(),
+  body_iv: t.String(),
+  date: t.String(),
+  archived: t.Boolean(),
+  version: t.Number(),
+  created_at: t.String(),
+  updated_at: t.String(),
+  file: t.Optional(noteFileDataResponseSchema),
+})
+
+const noteIdResponseSchema = t.Object({
+  id: t.String(),
+  title: t.String(),
+})
+
+const deletedNoteResponseSchema = t.Object({
+  id: t.String(),
+})
+
+const okResponse = { status: "ok" } as const
 
 const requireUser = async (headers: Record<string, string | undefined>) => {
   try {
@@ -27,75 +85,122 @@ const requireUser = async (headers: Record<string, string | undefined>) => {
 }
 
 const app = new Elysia()
-  .use(swagger({ path: "/openapi" }))
-  .get("/health", () => ({ status: "ok" }))
-  .get("/", () => ({ status: "ok" }))
-  .get("/notes", async ({ headers }: any) => {
+  .use(openapi({ path: "/openapi" }))
+  .get("/health", () => okResponse, {
+    response: t.Object({ status: t.Literal("ok") }),
+  })
+  .get("/", () => okResponse, {
+    response: t.Object({ status: t.Literal("ok") }),
+  })
+  .get("/notes", async ({ headers }) => {
     const { userId } = await requireUser(headers)
     const notes = await listNotes(userId)
-    return { note: notes, notes }
+    return notes
+  }, {
+    headers: authHeadersSchema,
+    response: t.Array(noteResponseSchema),
   })
-  .get("/notes/ids", async ({ headers }: any) => {
+  .get("/notes/ids", async ({ headers }) => {
     const { userId } = await requireUser(headers)
     const ids = await listNoteIds(userId)
-    return { note: ids, notes: ids }
+    return ids
+  }, {
+    headers: authHeadersSchema,
+    response: t.Array(noteIdResponseSchema),
   })
-  .post("/notes/bulk", async ({ headers, body }: any) => {
+  .post("/notes/bulk", async ({ headers, body }) => {
     const { userId } = await requireUser(headers)
-    const parsed = noteInputSchema.array().parse(Array.isArray(body) ? body : (body as any).inputs)
-    const inserted = await upsertNotes(userId, parsed)
-    return { insert_note: { returning: inserted }, notes: inserted }
+    const inserted = await upsertNotes(userId, body)
+    return inserted
+  }, {
+    headers: authHeadersSchema,
+    body: t.Array(noteInputSchemaBody),
+    response: t.Array(noteResponseSchema),
   })
-  .put("/note", async ({ headers, body }: any) => {
+  .put("/note", async ({ headers, body }) => {
     const { userId } = await requireUser(headers)
-    const parsed = noteInputSchema.parse(body)
-    const inserted = await upsertNotes(userId, [parsed])
-    return { insert_note: { returning: inserted }, notes: inserted }
+    const inserted = await upsertNotes(userId, [body])
+    return inserted[0]
+  }, {
+    headers: authHeadersSchema,
+    body: noteInputSchemaBody,
+    response: noteResponseSchema,
   })
-  .put("/notes/:id", async ({ headers, params, body }: any) => {
+  .put("/notes/:id", async ({ headers, params, body, set }) => {
     const { userId } = await requireUser(headers)
-    const parsed = noteInputSchema.partial().parse(body)
-    const note = await updateNote(userId, params.id, parsed)
-    if (!note) return new Response(null, { status: 404 })
-    return { update_note_by_pk: note, note }
+    const note = await updateNote(userId, params.id, body)
+    if (!note) {
+      set.status = 404
+      return null
+    }
+    return note
+  }, {
+    headers: authHeadersSchema,
+    params: noteIdParamsSchema,
+    body: t.Partial(noteInputSchemaBody),
+    response: {
+      200: noteResponseSchema,
+      404: t.Null(),
+    },
   })
-  .patch("/notes/:id/archive", async ({ headers, params, body }: any) => {
+  .patch("/notes/:id/archive", async ({ headers, params, body, set }) => {
     const { userId } = await requireUser(headers)
-    const note = await archiveNote(userId, params.id, (body as any)?.archived ?? true)
-    if (!note) return new Response(null, { status: 404 })
-    return { update_note_by_pk: note, note }
+    const note = await archiveNote(userId, params.id, body.archived ?? true)
+    if (!note) {
+      set.status = 404
+      return null
+    }
+    return note
+  }, {
+    headers: authHeadersSchema,
+    params: noteIdParamsSchema,
+    body: t.Object({
+      archived: t.Optional(t.Boolean()),
+    }),
+    response: {
+      200: noteResponseSchema,
+      404: t.Null(),
+    },
   })
-  .delete("/notes", async ({ headers, body }: any) => {
+  .delete("/notes", async ({ headers, body }) => {
     const { userId } = await requireUser(headers)
-    const ids = zIds(body)
-    const deleted = await deleteNotes(userId, ids)
-    return { delete_note: { returning: deleted }, notes: deleted }
+    return deleteNotes(userId, body.ids)
+  }, {
+    headers: authHeadersSchema,
+    body: idsBodySchema,
+    response: t.Array(deletedNoteResponseSchema),
   })
-  .post("/notes/archive", async ({ headers, body }: any) => {
+  .post("/notes/archive", async ({ headers, body }) => {
     const { userId } = await requireUser(headers)
-    const archived = await archiveNotes(userId, zIds(body))
-    return { update_note: { returning: archived }, notes: archived }
+    return archiveNotes(userId, body.ids)
+  }, {
+    headers: authHeadersSchema,
+    body: idsBodySchema,
+    response: t.Array(deletedNoteResponseSchema),
   })
-  .put("/notes/:id/file", async ({ headers, params, body }: any) => {
+  .put("/notes/:id/file", async ({ headers, params, body, set }) => {
     const { userId } = await requireUser(headers)
-    const parsed = noteFileDataSchema.parse(body)
-    const file = await upsertNoteFile(userId, params.id, parsed)
-    if (!file) return new Response(null, { status: 404 })
-    return { insert_note_file_data: { returning: [file] }, file }
+    const file = await upsertNoteFile(userId, params.id, body)
+    if (!file) {
+      set.status = 404
+      return null
+    }
+    return {
+      note_id: file.noteId,
+      title: file.title,
+      path: file.path,
+    }
+  }, {
+    headers: authHeadersSchema,
+    params: noteIdParamsSchema,
+    body: noteFileDataSchemaBody,
+    response: {
+      200: noteFileDataResponseSchema,
+      404: t.Null(),
+    },
   })
   .listen(PORT)
 
 console.log(
   `Running at ${app.server?.hostname}:${app.server?.port}`
 )
-
-function zIds(body: unknown) {
-  const ids = (body as any)?.ids
-  if (!Array.isArray(ids) || !ids.every(id => typeof id === "string")) {
-    throw new Response(JSON.stringify({ message: "ids must be an array of strings" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    })
-  }
-  return ids
-}

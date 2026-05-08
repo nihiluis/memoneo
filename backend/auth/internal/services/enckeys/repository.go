@@ -1,6 +1,8 @@
 package enckeys
 
 import (
+	"context"
+
 	uuid "github.com/gofrs/uuid/v5"
 	"github.com/nihiluis/memoneo2/auth/internal/datastore"
 	"github.com/nihiluis/memoneo2/auth/lib/models"
@@ -15,7 +17,12 @@ func init() {
 }
 
 func (r *EnckeyRepository) create(enckey *models.Enckey) (*models.Enckey, error) {
-	_, err := r.datastore.DB.Model(enckey).OnConflict("(id) DO UPDATE").Insert()
+	_, err := r.datastore.DB.NewInsert().
+		Model(enckey).
+		On("CONFLICT (user_id) DO UPDATE").
+		Set("key = EXCLUDED.key").
+		Set("salt = EXCLUDED.salt").
+		Exec(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +31,7 @@ func (r *EnckeyRepository) create(enckey *models.Enckey) (*models.Enckey, error)
 }
 
 func (r *EnckeyRepository) remove(enckey *models.Enckey) error {
-	_, err := r.datastore.DB.Model(enckey).Delete()
+	_, err := r.datastore.DB.NewDelete().Model(enckey).WherePK().Exec(context.Background())
 
 	return err
 }
@@ -32,9 +39,9 @@ func (r *EnckeyRepository) remove(enckey *models.Enckey) error {
 func (r *EnckeyRepository) GetByID(id uuid.UUID) (*models.Enckey, error) {
 	enckey := new(models.Enckey)
 
-	err := r.datastore.DB.Model(enckey).
-		Where("id = ?", id).
-		Select()
+	err := r.datastore.DB.NewSelect().Model(enckey).
+		Where("user_id = ?", id).
+		Scan(context.Background())
 
 	return enckey, err
 }
@@ -42,9 +49,9 @@ func (r *EnckeyRepository) GetByID(id uuid.UUID) (*models.Enckey, error) {
 func (r *EnckeyRepository) GetByIDOptional(id uuid.UUID) (*models.Enckey, error) {
 	var enckeys []models.Enckey
 
-	err := r.datastore.DB.Model(&enckeys).
-		Where("id = ?", id).
-		Select()
+	err := r.datastore.DB.NewSelect().Model(&enckeys).
+		Where("user_id = ?", id).
+		Scan(context.Background())
 
 	if err != nil {
 		return nil, err
