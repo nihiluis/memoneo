@@ -7,6 +7,7 @@ import { decodeBase64String } from "../base64.js"
 import { MemoneoConfig, MemoneoInternalConfig } from "../config.js"
 import { MemoneoFileCache } from "../fileCache.js"
 import { writeNoteToFile } from "./write.js"
+import { md5HashText } from "../../lib/files.js"
 import { SingleBar } from "cli-progress"
 import { promptConfirmation } from "../confirmation.js"
 import { formatNoteDate, limitTitleLength } from "./noteTitle.js"
@@ -21,6 +22,7 @@ interface DownloadNotesConfig {
   cache: MemoneoFileCache
   command: Command
   apiClient: MemoneoApiClient
+  localNoteIds?: string[]
 }
 
 export async function downloadNotes({
@@ -77,10 +79,11 @@ export async function writeNewNotes(
   notes: Note[],
   downloadConfig: DownloadNotesConfig
 ): Promise<Note[]> {
-  const { config, cache, command } = downloadConfig
+  const { config, cache, command, localNoteIds } = downloadConfig
+  const existingLocalNoteIds = new Set(localNoteIds ?? cache.trackedNoteIds)
 
   const newNotes: Note[] = notes.filter(
-    note => !note.archived && !cache.trackedNoteIds.includes(note.id)
+    note => !note.archived && !existingLocalNoteIds.has(note.id)
   )
 
   if (newNotes.length === 0) {
@@ -121,7 +124,13 @@ export async function writeNewNotes(
       title: note.file?.title ?? note.title,
       path: note.file?.path ?? config.defaultDirectory,
     })
-    cache.trackedNoteIds.push(note.id)
+    if (!cache.trackedNoteIds.includes(note.id)) {
+      cache.trackedNoteIds.push(note.id)
+    }
+    cache.updateNoteCacheData(note.id, {
+      lastMd5Hash: md5HashText(decryptedBody.trim()),
+      lastSync: note.updated_at,
+    })
     progress.increment()
   }
   progress.stop()

@@ -80,7 +80,9 @@ export async function deleteRemovedNotes(
 
   superfluousNotes.forEach(note => {
     const currentIdx = cache.trackedNoteIds.indexOf(note.id)
-    cache.trackedNoteIds.splice(currentIdx, 1)
+    if (currentIdx >= 0) {
+      cache.trackedNoteIds.splice(currentIdx, 1)
+    }
 
     delete cache.notes[note.id]
   })

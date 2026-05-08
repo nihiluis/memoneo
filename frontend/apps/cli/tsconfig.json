@@ -10,8 +10,5 @@
     "esModuleInterop": true,
     "moduleResolution": "NodeNext"
   },
-  "include": ["./src/**/*"],
-  "ts-node": {
-    "esm": true
-  }
+  "include": ["./src/**/*"]
 }

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia"
 import { openapi } from "@elysia/openapi"
 import { PORT } from "./env.js"
 import { verifyAuthorization } from "./auth.js"
+import { createLogger } from "./logger.js"
 import {
   archiveNote,
   archiveNotes,
@@ -12,6 +13,8 @@ import {
   upsertNoteFile,
   upsertNotes,
 } from "./notes.js"
+
+const logger = createLogger()
 
 const authHeadersSchema = t.Object({
   authorization: t.Optional(t.String()),
@@ -84,8 +87,20 @@ const requireUser = async (headers: Record<string, string | undefined>) => {
   }
 }
 
-const app = new Elysia()
+export const app = new Elysia()
   .use(openapi({ path: "/openapi" }))
+  .onError(({ code, error, request, set }) => {
+    logger.error(
+      {
+        err: error,
+        code,
+        status: set.status,
+        method: request.method,
+        url: request.url,
+      },
+      "request failed"
+    )
+  })
   .get("/health", () => okResponse, {
     response: t.Object({ status: t.Literal("ok") }),
   })
@@ -199,8 +214,10 @@ const app = new Elysia()
       404: t.Null(),
     },
   })
-  .listen(PORT)
+if (import.meta.main) {
+  app.listen(PORT)
 
-console.log(
-  `Running at ${app.server?.hostname}:${app.server?.port}`
-)
+  console.log(
+    `Running at ${app.server?.hostname}:${app.server?.port}`
+  )
+}

@@ -165,7 +165,9 @@ export async function uploadNewNotes({
 
     noteFileData.push(fileData)
 
-    cache.trackedNoteIds.push(note.id)
+    if (!cache.trackedNoteIds.includes(note.id)) {
+      cache.trackedNoteIds.push(note.id)
+    }
 
     const noteCacheData = cache.getOrCreateNoteCacheData(note.id)
     noteCacheData.lastMd5Hash = md5HashText(decryptedBody)

@@ -137,9 +137,23 @@ export async function deleteNotes(userId: string, ids: string[]) {
   if (ids.length === 0) {
     return []
   }
+
+  const ownedNotes = await db
+    .select({ id: notes.id })
+    .from(notes)
+    .where(and(eq(notes.userId, userId), inArray(notes.id, ids)))
+  const ownedIds = ownedNotes.map(note => note.id)
+  if (ownedIds.length === 0) {
+    return []
+  }
+
+  await db
+    .delete(noteFileData)
+    .where(inArray(noteFileData.noteId, ownedIds))
+
   return db
     .delete(notes)
-    .where(and(eq(notes.userId, userId), inArray(notes.id, ids)))
+    .where(and(eq(notes.userId, userId), inArray(notes.id, ownedIds)))
     .returning({ id: notes.id })
 }
 
