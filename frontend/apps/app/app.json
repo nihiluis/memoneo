@@ -50,7 +50,8 @@
           // Add setup_permissions to your Podfile (see iOS setup - steps 1, 2 and 3)
           "iosPermissions": []
         }
-      ]
+      ],
+      "react-native-enriched-markdown"
     ],
     "experiments": {
       "typedRoutes": true

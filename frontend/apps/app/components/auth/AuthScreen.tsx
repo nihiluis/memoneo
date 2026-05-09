@@ -17,5 +17,5 @@ export default function AuthScreen({
   if (!isAuthenticated) {
     return null
   }
-  return <View style={{ flex: 1 }}>{children}</View>
+  return <View className="flex-1">{children}</View>
 }
