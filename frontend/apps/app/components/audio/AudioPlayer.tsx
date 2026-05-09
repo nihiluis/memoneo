@@ -39,7 +39,7 @@ export default function AudioPlayer({ uri }: { uri: string }) {
 
   return (
     <MView className="flex flex-row gap-4 justify-center">
-      <Button size="iconLg" onPress={playing ? pausePlayback : startPlayback}>
+      <Button size="lg" isIconOnly onPress={playing ? pausePlayback : startPlayback}>
         {(!playing || paused) && <Play size={24} className="text-background" />}
         {playing && <PauseCircle size={24} className="text-background" />}
       </Button>

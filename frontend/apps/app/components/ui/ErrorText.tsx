@@ -1,9 +1,9 @@
 import * as React from "react"
+import type { Text, TextProps } from "react-native"
 import { MText } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
-import type { SlottableTextProps, TextRef } from "@rn-primitives/types"
 
-const ErrorText = React.forwardRef<TextRef, SlottableTextProps>(
+const ErrorText = React.forwardRef<Text, TextProps>(
   ({ className, ...props }, ref) => {
     return (
       <MText

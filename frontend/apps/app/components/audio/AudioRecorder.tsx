@@ -76,7 +76,8 @@ function AudioRecorderInner() {
   return (
     <MView className="flex flex-row gap-4 justify-center">
       <Button
-        size="iconLg"
+        size="lg"
+        isIconOnly
         onPress={recording || paused ? stopRecording : record}>
         {!recording && !paused && <Mic size={24} className="text-background" />}
         {(recording || paused) && (
@@ -84,9 +85,10 @@ function AudioRecorderInner() {
         )}
       </Button>
       <Button
-        size="iconLg"
+        size="lg"
+        isIconOnly
         onPress={paused ? record : pauseRecording}
-        disabled={!recording && !paused}>
+        isDisabled={!recording && !paused}>
         {!paused && <PauseCircle size={24} className="text-background" />}
         {paused && <PlayCircle size={24} className="text-background" />}
       </Button>

@@ -189,7 +189,7 @@ export default function RecordScreen() {
                   <MText>Upload</MText>
                 </Button>
               )}
-              <Button variant="destructive" size="lg">
+              <Button variant="danger" size="lg">
                 <MText>Delete</MText>
               </Button>
             </MView>

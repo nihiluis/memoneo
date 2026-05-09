@@ -78,7 +78,7 @@ export default function HomeScreen() {
                 <MView className="">
                   <MView className="flex-row justify-center gap-4 mb-8">
                     <AudioPlayer uri={audioState.uri} />
-                    <Button size="iconLg" onPress={discardAudioRecording}>
+                    <Button size="lg" isIconOnly onPress={discardAudioRecording}>
                       <Trash size={24} />
                     </Button>
                   </MView>

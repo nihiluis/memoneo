@@ -1,10 +1,18 @@
-import { useColorScheme as useNativewindColorScheme } from "nativewind"
+import { useCallback } from "react"
+import { Uniwind, useUniwind } from "uniwind"
 
 export function useColorScheme() {
-  const { colorScheme, setColorScheme, toggleColorScheme } =
-    useNativewindColorScheme()
+  const { theme } = useUniwind()
+  const colorScheme = theme === "light" ? "light" : "dark"
+  const setColorScheme = useCallback((value: "light" | "dark" | "system") => {
+    Uniwind.setTheme(value)
+  }, [])
+  const toggleColorScheme = useCallback(() => {
+    Uniwind.setTheme(colorScheme === "dark" ? "light" : "dark")
+  }, [colorScheme])
+
   return {
-    colorScheme: colorScheme ?? "dark",
+    colorScheme,
     isDarkColorScheme: colorScheme === "dark",
     setColorScheme,
     toggleColorScheme,

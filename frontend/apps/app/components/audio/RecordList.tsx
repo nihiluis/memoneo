@@ -80,9 +80,7 @@ function RecordItem({ item, handleInspect, handleDelete }: RecordItemProps) {
     <MView>
       <Button
         className="flex-1 py-4 px-2"
-        size="none"
         variant="ghost"
-        rounded={false}
         onPress={() => handleInspect(item)}>
         <MView className="flex-row items-center justify-between">
           <MView className="flex-1">
@@ -94,7 +92,7 @@ function RecordItem({ item, handleInspect, handleDelete }: RecordItemProps) {
           <MView className="flex-row gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="iconLg" variant="ghost" onPress={() => {}}>
+                <Button size="lg" isIconOnly variant="ghost" onPress={() => {}}>
                   <EllipsisVertical size={32} className="text-foreground" />
                 </Button>
               </DropdownMenuTrigger>

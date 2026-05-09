@@ -1,14 +1,6 @@
-import { styled } from "nativewind"
 import { LucideIcon } from "lucide-react-native"
+import { withUniwind } from "uniwind"
 
 export function iconWithClassName(icon: LucideIcon) {
-  return styled(icon, {
-    className: {
-      target: "style",
-      nativeStyleToProp: {
-        color: true,
-        opacity: true,
-      },
-    },
-  } as never) as LucideIcon
+  return withUniwind(icon) as LucideIcon
 }
