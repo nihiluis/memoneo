@@ -15,6 +15,7 @@ import javax.crypto.spec.SecretKeySpec
 object EnckeyDecryption {
     private const val ALGORITHM = "AES/GCM/NoPadding"
     private const val TAG_LENGTH_BIT = 128 // GCM authentication tag length
+    private const val TEXT_IV_LENGTH = 12
     private const val TAG = "EnckeyDecryption"
     private const val PROTECTED_KEY_PREFIX = "v2:"
 
@@ -46,6 +47,37 @@ object EnckeyDecryption {
         
         // Convert decrypted bytes to SecretKey
         return SecretKeySpec(decryptedBytes, "AES")
+    }
+
+    fun decryptText(
+        encryptedText: String,
+        ivStr: String?,
+        protectedKey: SecretKey
+    ): String {
+        val (iv, ciphertext) = if (ivStr != null && ivStr.isNotEmpty()) {
+            Pair(
+                Base64.decode(ivStr, Base64.DEFAULT),
+                Base64.decode(encryptedText, Base64.DEFAULT)
+            )
+        } else {
+            val combined = Base64.decode(encryptedText, Base64.DEFAULT)
+            if (combined.size <= TEXT_IV_LENGTH) {
+                throw IllegalArgumentException("Encrypted text is too short")
+            }
+            Pair(
+                combined.copyOfRange(0, TEXT_IV_LENGTH),
+                combined.copyOfRange(TEXT_IV_LENGTH, combined.size)
+            )
+        }
+        val cipher = Cipher.getInstance(ALGORITHM).apply {
+            init(
+                Cipher.DECRYPT_MODE,
+                protectedKey,
+                GCMParameterSpec(TAG_LENGTH_BIT, iv)
+            )
+        }
+
+        return String(cipher.doFinal(ciphertext), Charsets.UTF_8)
     }
 
     private fun parseProtectedKey(ctStr: String): ParsedProtectedKey {

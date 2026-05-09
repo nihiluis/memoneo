@@ -1,15 +1,16 @@
 import AuthScreen from "@/components/auth/AuthScreen"
-import { FormInput } from "@/components/form/FormInput"
+import { useAppDrawer } from "@/components/navigation/AppDrawer"
 import { Button } from "@/components/reusables/Button"
 import { MText } from "@/components/reusables/MText"
-import MView from "@/components/reusables/MView"
-import { Separator } from "@/components/reusables/Separator"
-import MRootView from "@/components/ui/MRootView"
 import { authAtom } from "@/lib/auth/state"
 import { useSetAtom } from "jotai"
+import { Menu } from "lucide-react-native"
+import { Pressable, View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function SettingsScreen() {
   const setAuth = useSetAtom(authAtom)
+  const { openDrawer } = useAppDrawer()
 
   function signOff() {
     setAuth({
@@ -21,21 +22,24 @@ export default function SettingsScreen() {
     })
   }
 
-  function setEncryptionKey() {
-  }
-
   return (
     <AuthScreen>
-      <MRootView>
-        <MView className="flex">
-        </MView>
-        <Separator className="my-4" />
-        <MView className="items-center mb-4">
+      <SafeAreaView className="flex-1 bg-background">
+        <View className="h-14 flex-row items-center border-b border-border px-4">
+          <Pressable
+            accessibilityRole="button"
+            className="mr-3 h-10 w-10 items-center justify-center rounded-md"
+            onPress={openDrawer}>
+            <Menu size={24} color="#a1a1aa" />
+          </Pressable>
+          <MText className="flex-1 text-lg font-semibold">Settings</MText>
+        </View>
+        <View className="mt-4 items-center border-t border-border pt-4">
           <Button size="lg" variant="ghost" onPress={signOff}>
             <MText>Sign off</MText>
           </Button>
-        </MView>
-      </MRootView>
+        </View>
+      </SafeAreaView>
     </AuthScreen>
   )
 }

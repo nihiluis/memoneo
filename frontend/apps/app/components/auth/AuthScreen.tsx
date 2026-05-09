@@ -1,5 +1,6 @@
 import { authAtom } from "@/lib/auth/state"
 import { useAtomValue } from "jotai"
+import { View } from "react-native"
 import { Spinner } from "../ui/Spinner"
 
 export default function AuthScreen({
@@ -16,5 +17,5 @@ export default function AuthScreen({
   if (!isAuthenticated) {
     return null
   }
-  return <>{children}</>
+  return <View style={{ flex: 1 }}>{children}</View>
 }

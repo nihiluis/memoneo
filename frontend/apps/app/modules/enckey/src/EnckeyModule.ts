@@ -8,6 +8,7 @@ declare class EnckeyModule extends NativeModule<{}> {
     ivStr: string
   ): Promise<void>
   encryptText(text: string): Promise<string>
+  decryptText(text: string, ivStr?: string | null): Promise<string>
 }
 
 // This call loads the native module object from the JSI.

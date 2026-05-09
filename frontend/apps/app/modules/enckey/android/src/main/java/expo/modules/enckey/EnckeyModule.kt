@@ -43,6 +43,17 @@ class EnckeyModule : Module() {
         throw ex
       }
     }
+
+    AsyncFunction("decryptText") { text: String, ivStr: String? ->
+      val key = EnckeyStore.retrieveKey() ?: throw NoKeyStoredException()
+      return@AsyncFunction try {
+        EnckeyDecryption.decryptText(text, ivStr, key)
+      } catch (ex: Exception) {
+        Log.e(ID, "Error decrypting text: ${ex.message}", ex)
+
+        throw ex
+      }
+    }
   }
 
   companion object {

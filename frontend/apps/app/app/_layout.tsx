@@ -44,9 +44,8 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <SetupProvider>
             <AuthProvider>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="records/[recordId]" options={{}} />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="+not-found" />
               </Stack>
             </AuthProvider>
