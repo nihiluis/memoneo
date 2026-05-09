@@ -9,6 +9,7 @@ import * as SplashScreen from "expo-splash-screen"
 import { StatusBar } from "expo-status-bar"
 import { useEffect } from "react"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
+import { KeyboardProvider } from "react-native-keyboard-controller"
 import "react-native-reanimated"
 import "@/global.css"
 
@@ -41,16 +42,18 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <QueryClientProvider client={queryClient}>
-          <SetupProvider>
-            <AuthProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-            </AuthProvider>
-          </SetupProvider>
-        </QueryClientProvider>
+        <KeyboardProvider>
+          <QueryClientProvider client={queryClient}>
+            <SetupProvider>
+              <AuthProvider>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+              </AuthProvider>
+            </SetupProvider>
+          </QueryClientProvider>
+        </KeyboardProvider>
         <StatusBar style="auto" />
       </ThemeProvider>
     </GestureHandlerRootView>
