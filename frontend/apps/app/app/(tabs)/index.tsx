@@ -11,7 +11,8 @@ import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
-  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -39,7 +40,7 @@ export default function NotesScreen() {
 
   return (
     <AuthScreen>
-      <SafeAreaView className="flex-1 bg-background">
+      <SafeAreaView className="bg-background" style={{ flex: 1 }}>
         <NoteReader
           error={notesQuery.error}
           isLoading={notesQuery.isLoading}
@@ -65,8 +66,6 @@ function NoteReader({
   const [isDecryptingBody, setIsDecryptingBody] = useState(false)
   const [styleState, setStyleState] = useState<StyleState | null>(null)
   const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
-  const keyboardInset = useKeyboardInset()
-  const toolbarBottom = keyboardInset > 0 ? keyboardInset + 16 : 16
 
   useEffect(() => {
     let cancelled = false
@@ -144,10 +143,13 @@ function NoteReader({
       )}
 
       {!isLoading && !error && note && (
-        <View className="flex-1">
-          <View className="flex-1" style={{ marginBottom: keyboardInset }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+          keyboardVerticalOffset={0}>
+          <View className="flex-1">
             {isDecryptingBody ? (
-              <View className="flex-1 px-4 pb-24 pt-4">
+              <View className="flex-1 px-4 py-4">
                 <MText className="text-lg leading-7 text-muted-foreground">
                   Decrypting note...
                 </MText>
@@ -161,20 +163,8 @@ function NoteReader({
                 onChangeState={setStyleState}
                 placeholder="Start writing..."
                 placeholderTextColor="#71717a"
-                scrollEnabled
                 selectionColor="#94a3b8"
-                style={{
-                  flex: 1,
-                  width: "100%",
-                  backgroundColor: "transparent",
-                  paddingHorizontal: 18,
-                  paddingTop: 20,
-                  paddingBottom: 96,
-                  fontSize: 18,
-                  lineHeight: 34,
-                  color: "#f8fafc",
-                  textAlignVertical: "top",
-                }}
+                style={styles.editor}
                 markdownStyle={{
                   strong: { color: "#f8fafc" },
                   em: { color: "#f8fafc" },
@@ -182,79 +172,67 @@ function NoteReader({
                 }}
               />
             )}
+            <MarkdownToolbar
+              editorRef={editorRef}
+              styleState={styleState}
+            />
           </View>
-          <MarkdownToolbar
-            bottom={toolbarBottom}
-            editorRef={editorRef}
-            styleState={styleState}
-          />
-        </View>
+        </KeyboardAvoidingView>
       )}
     </View>
   )
 }
 
 function MarkdownToolbar({
-  bottom,
   editorRef,
   styleState,
 }: {
-  bottom: number
   editorRef: React.RefObject<EnrichedMarkdownTextInputInstance | null>
   styleState: StyleState | null
 }) {
   return (
-    <View style={[styles.toolbarOverlay, { bottom }]}>
-      <View className="flex-row items-center justify-center gap-1 rounded-full bg-muted px-4 py-2">
-        <ToolbarButton
-          accessibilityLabel="Bold"
-          active={styleState?.bold.isActive}
-          onPress={() => editorRef.current?.toggleBold()}>
-          <Bold
-            size={18}
-            color={styleState?.bold.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-        <ToolbarButton
-          accessibilityLabel="Italic"
-          active={styleState?.italic.isActive}
-          onPress={() => editorRef.current?.toggleItalic()}>
-          <Italic
-            size={18}
-            color={styleState?.italic.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-        <ToolbarButton
-          accessibilityLabel="Underline"
-          active={styleState?.underline.isActive}
-          onPress={() => editorRef.current?.toggleUnderline()}>
-          <Underline
-            size={18}
-            color={styleState?.underline.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-        <ToolbarButton
-          accessibilityLabel="Strikethrough"
-          active={styleState?.strikethrough.isActive}
-          onPress={() => editorRef.current?.toggleStrikethrough()}>
-          <Strikethrough
-            size={18}
-            color={styleState?.strikethrough.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-      </View>
+    <View
+      className="flex-row items-center gap-1 px-4 py-2 mb-4 rounded-full bg-muted items-center justify-center"
+      style={styles.toolbar}>
+      <ToolbarButton
+        accessibilityLabel="Bold"
+        active={styleState?.bold.isActive}
+        onPress={() => editorRef.current?.toggleBold()}>
+        <Bold
+          size={18}
+          color={styleState?.bold.isActive ? "#f8fafc" : "#a1a1aa"}
+        />
+      </ToolbarButton>
+      <ToolbarButton
+        accessibilityLabel="Italic"
+        active={styleState?.italic.isActive}
+        onPress={() => editorRef.current?.toggleItalic()}>
+        <Italic
+          size={18}
+          color={styleState?.italic.isActive ? "#f8fafc" : "#a1a1aa"}
+        />
+      </ToolbarButton>
+      <ToolbarButton
+        accessibilityLabel="Underline"
+        active={styleState?.underline.isActive}
+        onPress={() => editorRef.current?.toggleUnderline()}>
+        <Underline
+          size={18}
+          color={styleState?.underline.isActive ? "#f8fafc" : "#a1a1aa"}
+        />
+      </ToolbarButton>
+      <ToolbarButton
+        accessibilityLabel="Strikethrough"
+        active={styleState?.strikethrough.isActive}
+        onPress={() => editorRef.current?.toggleStrikethrough()}>
+        <Strikethrough
+          size={18}
+          color={styleState?.strikethrough.isActive ? "#f8fafc" : "#a1a1aa"}
+        />
+      </ToolbarButton>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  toolbarOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-})
 
 function ToolbarButton({
   accessibilityLabel,
@@ -281,32 +259,26 @@ function ToolbarButton({
   )
 }
 
-function useKeyboardInset() {
-  const [keyboardInset, setKeyboardInset] = useState(0)
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", event => {
-      setKeyboardInset(event.endCoordinates.height)
-    })
-    const frameSubscription = Keyboard.addListener(
-      "keyboardDidChangeFrame",
-      event => {
-        setKeyboardInset(event.endCoordinates.height)
-      }
-    )
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardInset(0)
-    })
-
-    return () => {
-      showSubscription.remove()
-      frameSubscription.remove()
-      hideSubscription.remove()
-    }
-  }, [])
-
-  return keyboardInset
-}
+const styles = StyleSheet.create({
+  editor: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 96,
+    fontSize: 18,
+    lineHeight: 40,
+    color: "#f8fafc",
+    backgroundColor: "transparent",
+    textAlignVertical: "top",
+  },
+  toolbar: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "#09090b",
+  },
+})
 
 function getNoteTitle(note: Note | null) {
   return note?.file?.title ?? note?.title ?? ""
