@@ -4,21 +4,36 @@ import { Input } from "@/components/reusables/Input"
 import { MText } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
 import type { TextInputProps } from "react-native"
-import { Controller, Control, RegisterOptions } from "react-hook-form"
+import {
+  Controller,
+  Control,
+  FieldValues,
+  Path,
+  RegisterOptions,
+} from "react-hook-form"
 
-interface FormInputProps extends TextInputProps {
+interface FormInputProps<T extends FieldValues> extends TextInputProps {
   label?: string
   error?: string
   description?: string
-  control?: Control<any>
-  name?: string
-  rules?: RegisterOptions
+  control?: Control<T>
+  name?: Path<T>
+  rules?: RegisterOptions<T, Path<T>>
 }
 
-const FormInput = React.forwardRef<
-  React.ElementRef<typeof Input>,
-  FormInputProps
->(({ label, error, description, className, control, name, rules, ...props }, ref) => {
+function FormInputInner<T extends FieldValues>(
+  {
+    label,
+    error,
+    description,
+    className,
+    control,
+    name,
+    rules,
+    ...props
+  }: FormInputProps<T>,
+  ref: React.ForwardedRef<React.ComponentRef<typeof Input>>
+) {
   if (control && name) {
     return (
       <Controller
@@ -72,7 +87,13 @@ const FormInput = React.forwardRef<
       )}
     </View>
   )
-})
+}
+
+type FormInputComponent = (<T extends FieldValues>(
+  props: FormInputProps<T> & React.RefAttributes<React.ComponentRef<typeof Input>>
+) => React.ReactElement) & { displayName?: string }
+
+const FormInput = React.forwardRef(FormInputInner) as FormInputComponent
 
 FormInput.displayName = "FormInput"
 

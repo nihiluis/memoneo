@@ -36,7 +36,6 @@ export async function queueTranscription(
   })
 
   const url = `${process.env.EXPO_PUBLIC_TRANSCRIBE_BASE_URL}/transcribe/${id}`
-  console.log("queueTranscription formData to url", url)
   const response = await axios.post(url, formData, {
     headers: {
       "Content-Type": "multipart/form-data",

@@ -1,10 +1,13 @@
 import * as React from "react"
-import { TextInput, type TextInputProps } from "react-native"
+import { TextInput as RNTextInput, type TextInputProps } from "react-native"
+import { styled } from "react-native-css"
 import { cn } from "@/lib/reusables/utils"
 import colors from "@/colors"
 
+const TextInput = styled(RNTextInput)
+
 const Input = React.forwardRef<
-  React.ElementRef<typeof TextInput>,
+  React.ComponentRef<typeof RNTextInput>,
   TextInputProps
 >(({ className, ...props }, ref) => {
   return (
