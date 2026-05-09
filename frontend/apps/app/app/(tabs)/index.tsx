@@ -18,6 +18,8 @@ import {
 } from "react-native"
 import {
   EnrichedMarkdownTextInput,
+  MarkdownStyle,
+  MarkdownTextInputStyle,
   type EnrichedMarkdownTextInputInstance,
   type StyleState,
 } from "react-native-enriched-markdown"
@@ -69,6 +71,13 @@ function NoteReader({
   const [isDecryptingBody, setIsDecryptingBody] = useState(false)
   const [styleState, setStyleState] = useState<StyleState | null>(null)
   const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
+
+  const markdownStyle: MarkdownTextInputStyle = useMemo(() => ({
+    strong: { color: "#f8fafc" },
+    em: { color: "#f8fafc" },
+    link: { color: "#60a5fa", underline: true },
+    lineHeight: 24,
+  }), []);
 
   useEffect(() => {
     let cancelled = false
@@ -150,35 +159,33 @@ function NoteReader({
           behavior="padding"
           className="flex-1"
           keyboardVerticalOffset={0}>
-          {isDecryptingBody ? (
-            <View className="flex-1 px-4 py-4">
-              <MText className="text-lg leading-7 text-muted-foreground">
-                Decrypting note...
-              </MText>
-            </View>
-          ) : (
-            <EnrichedMarkdownTextInput
-              key={`${note.id}:${note.updated_at ?? note.version}`}
-              ref={editorRef}
-              defaultValue={body}
-              onChangeMarkdown={setBody}
-              onChangeState={setStyleState}
-              placeholder="Start writing..."
-              placeholderTextColor="#71717a"
-              selectionColor="#94a3b8"
-              style={styles.editor}
-              markdownStyle={{
-                strong: { color: "#f8fafc" },
-                em: { color: "#f8fafc" },
-                link: { color: "#60a5fa", underline: true },
-              }}
+          <View className="flex-1">
+            {isDecryptingBody ? (
+              <View className="flex-1 px-4 py-4">
+                <MText className="text-lg leading-7 text-muted-foreground">
+                  Decrypting note...
+                </MText>
+              </View>
+            ) : (
+              <EnrichedMarkdownTextInput
+                key={`${note.id}:${note.updated_at ?? note.version}`}
+                ref={editorRef}
+                defaultValue={body}
+                onChangeMarkdown={setBody}
+                onChangeState={setStyleState}
+                placeholder="Start writing..."
+                placeholderTextColor="#71717a"
+                selectionColor="#94a3b8"
+                style={styles.editor}
+                markdownStyle={markdownStyle}
+              />
+            )}
+            <MarkdownToolbar
+              editorRef={editorRef}
+              bottomInset={insets.bottom}
+              styleState={styleState}
             />
-          )}
-          <MarkdownToolbar
-            editorRef={editorRef}
-            bottomInset={insets.bottom}
-            styleState={styleState}
-          />
+          </View>
         </KeyboardAvoidingView>
       )}
     </View>
@@ -196,8 +203,9 @@ function MarkdownToolbar({
 }) {
   return (
     <View
-      className="bg-background px-4"
-      style={{ paddingBottom: bottomInset + TOOLBAR_GAP }}>
+      className="px-4"
+      pointerEvents="box-none"
+      style={[styles.toolbar, { bottom: bottomInset + TOOLBAR_GAP }]}>
       <View className="flex-row items-center justify-center gap-1 rounded-full bg-muted px-4 py-2">
         <ToolbarButton
           accessibilityLabel="Bold"
@@ -272,11 +280,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingTop: 20,
-    fontSize: 18,
-    lineHeight: 40,
+    paddingBottom: 24,
+    fontSize: 16,
+    lineHeight: 54,
     color: "#f8fafc",
     backgroundColor: "transparent",
     textAlignVertical: "top",
+  },
+  toolbar: {
+    position: "absolute",
+    right: 0,
+    left: 0,
+    zIndex: 1,
   },
 })
 
