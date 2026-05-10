@@ -28,7 +28,7 @@ export default function AuthProvider({
       }
     }
     loadToken()
-  }, [])
+  }, [setToken, token])
 
   // Only set this after the storedToken was retrieved.
   useEffect(() => {
@@ -81,7 +81,13 @@ export default function AuthProvider({
       }
     }
     checkAuth()
-  }, [token, tokenInitialized])
+  }, [
+    auth.isAuthenticated,
+    mutation,
+    setAuth,
+    token,
+    tokenInitialized,
+  ])
 
   return <>{children}</>
 }

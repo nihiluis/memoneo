@@ -8,8 +8,8 @@ import Logo from "@/components/Logo"
 import { Stack, useRouter } from "expo-router"
 import { apiLogin } from "@/lib/auth/api"
 import { authAtom, tokenAtom } from "@/lib/auth/state"
-import { useAtom, useSetAtom } from "jotai"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useAtom } from "jotai"
+import { useMutation } from "@tanstack/react-query"
 import { ErrorText } from "@/components/ui/ErrorText"
 import { Spinner } from "@/components/ui/Spinner"
 import { useEffect } from "react"
@@ -33,7 +33,7 @@ export default function LoginScreen() {
     },
   })
 
-  const [token, setToken] = useAtom(tokenAtom)
+  const [, setToken] = useAtom(tokenAtom)
   const [auth, setAuth] = useAtom(authAtom)
   const mutation = useMutation({
     mutationFn: (data: LoginFormData) => apiLogin(data.mail, data.password),
@@ -55,7 +55,7 @@ export default function LoginScreen() {
       console.log("redirect to home")
       router.replace("/")
     }
-  }, [auth.isAuthenticated])
+  }, [auth.isAuthenticated, router])
 
   async function onSubmit(data: LoginFormData) {
     mutation.mutate(data)

@@ -127,7 +127,7 @@ export default function RecordScreen() {
       console.error("Failed to queue transcription", error)
       Alert.alert("Error", "Failed to queue transcription.")
     }
-  }, [recordFileData, transcribeMutation])
+  }, [pendingTranscription, recordFileData, syncMetadata, transcribeMutation])
 
   return (
     <>

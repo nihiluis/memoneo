@@ -1,7 +1,5 @@
 import { MText } from "../reusables/MText"
 import { Button } from "../reusables/Button"
-import { getRecordDir } from "@/lib/audio/file"
-import { Alert } from "react-native"
 
 interface OpenRecordDirButtonInnerProps {
   openRecordDir: () => void

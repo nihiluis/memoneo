@@ -4,14 +4,13 @@ import {
   RecordFileData,
 } from "@/lib/audio/file"
 import { FlashList } from "@shopify/flash-list"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import MView from "../reusables/MView"
 import { MText } from "../reusables/MText"
 import { Button } from "../reusables/Button"
 import { Separator } from "../reusables/Separator"
 import { cn } from "@/lib/reusables/utils"
 import { useFocusEffect, useRouter } from "expo-router"
-import { useColorScheme } from "react-native"
 import { EllipsisVertical } from "@/lib/icons/EllipsisVertical"
 import { DropdownMenu, DropdownMenuTrigger } from "../reusables/DropdownMenu"
 import RecordItemDropdown from "./RecordItemDropdown"
@@ -37,9 +36,12 @@ export function RecordList() {
     [recordFiles]
   )
 
-  const inspectRecord = useCallback((file: RecordFileData) => {
-    router.push(`/records/${file.filename}` as any)
-  }, [])
+  const inspectRecord = useCallback(
+    (file: RecordFileData) => {
+      router.push(`/records/${file.filename}` as any)
+    },
+    [router]
+  )
 
   return (
     <MView className="flex-1">

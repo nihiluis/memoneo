@@ -61,7 +61,7 @@ export function PermissionProvider({
       })
     }
     requestPermissions()
-  }, [])
+  }, [alertMessage, permissions])
 
   if (preventRender && notGrantedPermissions.length > 0) {
     return null

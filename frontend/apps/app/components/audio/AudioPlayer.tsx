@@ -31,7 +31,7 @@ export default function AudioPlayer({ uri }: { uri: string }) {
       setPlaying(false)
       setPaused(false)
     }
-  }, [playerStatus.playing])
+  }, [playing, playerStatus.playing])
 
   if (!uri) {
     return null
