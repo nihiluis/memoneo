@@ -7,6 +7,7 @@ import { useFonts } from "expo-font"
 import { Stack } from "expo-router"
 import * as SplashScreen from "expo-splash-screen"
 import { StatusBar } from "expo-status-bar"
+import * as SystemUI from "expo-system-ui"
 import { useEffect } from "react"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { KeyboardProvider } from "react-native-keyboard-controller"
@@ -22,9 +23,22 @@ import { SetupProvider } from "@/components/setup/SetupProvider"
 SplashScreen.preventAutoHideAsync()
 
 const queryClient = new QueryClient()
+const THEME_COLORS = {
+  dark: {
+    background: "#09090b",
+    statusBarStyle: "light" as const,
+  },
+  light: {
+    background: "#ffffff",
+    statusBarStyle: "dark" as const,
+  },
+}
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme()
+  const isDark = colorScheme === "dark"
+  const themeColors = isDark ? THEME_COLORS.dark : THEME_COLORS.light
+  const navigationTheme = isDark ? DarkTheme : DefaultTheme
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   })
@@ -35,13 +49,25 @@ export default function RootLayout() {
     }
   }, [loaded])
 
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(themeColors.background)
+  }, [themeColors.background])
+
   if (!loaded) {
     return null
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <GestureHandlerRootView
+      style={{ backgroundColor: themeColors.background, flex: 1 }}>
+      <ThemeProvider
+        value={{
+          ...navigationTheme,
+          colors: {
+            ...navigationTheme.colors,
+            background: themeColors.background,
+          },
+        }}>
         <KeyboardProvider>
           <QueryClientProvider client={queryClient}>
             <SetupProvider>
@@ -54,7 +80,10 @@ export default function RootLayout() {
             </SetupProvider>
           </QueryClientProvider>
         </KeyboardProvider>
-        <StatusBar style="auto" />
+        <StatusBar
+          backgroundColor={themeColors.background}
+          style={themeColors.statusBarStyle}
+        />
       </ThemeProvider>
     </GestureHandlerRootView>
   )
