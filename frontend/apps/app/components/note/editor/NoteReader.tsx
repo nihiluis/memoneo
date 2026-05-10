@@ -6,10 +6,7 @@ import { ActivityIndicator, Alert, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { createLocalNote, writeLocalNote } from "@/lib/notes/local"
-import {
-  NOTES_LOCAL_QUERY_KEY,
-  upsertNoteInLocalQueryCache,
-} from "@/lib/notes/query"
+import { upsertNoteInLocalQueryCache } from "@/lib/notes/query"
 import { selectedNoteAtom, selectedNoteIdAtom, useNotesState } from "@/lib/notes/state"
 
 import { NoteEditorBody } from "./NoteEditorBody"
@@ -65,7 +62,7 @@ export function NoteReader() {
       await writeLocalNote(updatedNote, draft.body)
       return { kind: "updated" as const, note: updatedNote, draft }
     },
-    onSuccess: async result => {
+    onSuccess: result => {
       upsertNoteInLocalQueryCache(queryClient, result.note)
 
       if (result.kind === "created") {
@@ -85,8 +82,6 @@ export function NoteReader() {
         }
         setSelectedNoteId(result.note.id)
       }
-
-      await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
     },
     onError: error => {
       Alert.alert(
