@@ -77,7 +77,8 @@ describe("note tree helpers", () => {
   it("compares sets and resolves note titles", () => {
     expect(setsAreEqual(new Set(["a", "b"]), new Set(["b", "a"]))).toBe(true)
     expect(setsAreEqual(new Set(["a"]), new Set(["a", "b"]))).toBe(false)
-    expect(getNoteTitle(note("a", "Remote", "", "Local"))).toBe("Local")
+    expect(getNoteTitle(note("a", "Remote", "", "Local"))).toBe("Remote")
+    expect(getNoteTitle(note("a", "", "", "Filename"))).toBe("Filename")
   })
 
   it("maps notes and folder ids to creation targets", () => {

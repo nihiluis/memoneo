@@ -31,6 +31,7 @@ import {
   NOTES_CACHE_QUERY_KEY,
   NOTES_FOLDERS_QUERY_KEY,
   NOTES_LOCAL_QUERY_KEY,
+  upsertNoteInLocalQueryCache,
   useNoteFoldersQuery,
   useNotesQuery,
 } from "@/lib/notes/query"
@@ -158,10 +159,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     mutationFn: async (folderId: string) =>
       createLocalNote("Untitled", "", getFolderPathFromId(folderId)),
     onSuccess: async createdNote => {
-      queryClient.setQueryData<Note[]>(NOTES_LOCAL_QUERY_KEY, current => [
-        createdNote,
-        ...(current ?? []).filter(note => note.id !== createdNote.id),
-      ])
+      upsertNoteInLocalQueryCache(queryClient, createdNote)
       setSelectedNoteId(createdNote.id)
       setSelectedFolderId(getNoteFolderId(createdNote))
       await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })

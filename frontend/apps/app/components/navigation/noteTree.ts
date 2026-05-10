@@ -103,7 +103,11 @@ export function getFolderPathFromId(folderId: string) {
 }
 
 export function getNoteTitle(note: Note) {
-  return note.file?.title ?? note.title
+  const logical = note.title?.trim()
+  if (logical) {
+    return logical
+  }
+  return note.file?.title ?? note.title ?? ""
 }
 
 export function setsAreEqual<T>(left: Set<T>, right: Set<T>) {

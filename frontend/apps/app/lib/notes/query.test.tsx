@@ -14,7 +14,12 @@ vi.mock("./local", () => ({
 }))
 
 const { renderHook, waitFor } = testingLibrary
-const { useNoteFoldersQuery, useNotesQuery } = await import("./query")
+const {
+  NOTES_LOCAL_QUERY_KEY,
+  upsertNoteInLocalQueryCache,
+  useNoteFoldersQuery,
+  useNotesQuery,
+} = await import("./query")
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({
@@ -85,5 +90,31 @@ describe("useNoteFoldersQuery", () => {
 
     await waitFor(() => expect(result.result.current.isSuccess).toBe(true))
     expect(result.result.current.data).toEqual(["Work", "Work/Ideas"])
+  })
+})
+
+describe("upsertNoteInLocalQueryCache", () => {
+  it("inserts into an empty cache and sorts by recency", () => {
+    const queryClient = new QueryClient()
+    const n = note("a", "2026-03-01T00:00:00.000Z")
+    upsertNoteInLocalQueryCache(queryClient, n)
+    expect(
+      queryClient.getQueryData(NOTES_LOCAL_QUERY_KEY)?.map(x => x.id)
+    ).toEqual(["a"])
+  })
+
+  it("replaces an existing id and re-sorts", () => {
+    const queryClient = new QueryClient()
+    queryClient.setQueryData<Note[]>(NOTES_LOCAL_QUERY_KEY, [
+      note("older", "2026-01-01T00:00:00.000Z"),
+      note("target", "2026-02-01T00:00:00.000Z"),
+    ])
+    upsertNoteInLocalQueryCache(
+      queryClient,
+      note("target", "2026-04-01T00:00:00.000Z")
+    )
+    expect(
+      queryClient.getQueryData<Note[]>(NOTES_LOCAL_QUERY_KEY)?.map(x => x.id)
+    ).toEqual(["target", "older"])
   })
 })

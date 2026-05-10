@@ -1,5 +1,5 @@
 import { Note } from "@memoneo/shared"
-import { useQuery } from "@tanstack/react-query"
+import { type QueryClient, useQuery } from "@tanstack/react-query"
 
 import { listLocalFolderPaths, listLocalNotes } from "./local"
 
@@ -22,8 +22,20 @@ export function useNoteFoldersQuery() {
   })
 }
 
-function sortNotes(notes: Note[]) {
+export function sortNotes(notes: Note[]) {
   return [...notes].sort((a, b) => getNoteTime(b) - getNoteTime(a))
+}
+
+export function upsertNoteInLocalQueryCache(
+  queryClient: QueryClient,
+  noteToStore: Note
+) {
+  queryClient.setQueryData<Note[]>(NOTES_LOCAL_QUERY_KEY, current =>
+    sortNotes([
+      noteToStore,
+      ...(current ?? []).filter(n => n.id !== noteToStore.id),
+    ])
+  )
 }
 
 function getNoteTime(note: Note) {

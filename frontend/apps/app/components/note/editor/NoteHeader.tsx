@@ -1,21 +1,24 @@
 import type { Note } from "@memoneo/shared"
-import { Menu } from "lucide-react-native"
+import { Menu, Save } from "lucide-react-native"
 import { Pressable, TextInput, View } from "react-native"
 
+import { MText } from "@/components/reusables/MText"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
 
 type NoteHeaderProps = {
   note: Note | null
   title: string
   onChangeTitle: (title: string) => void
-  onBlurTitle?: () => void
+  onSave: () => void
+  saveDisabled?: boolean
 }
 
 export function NoteHeader({
   note,
   title,
   onChangeTitle,
-  onBlurTitle,
+  onSave,
+  saveDisabled = false,
 }: NoteHeaderProps) {
   const { openDrawer } = useAppDrawer()
 
@@ -30,12 +33,20 @@ export function NoteHeader({
       <TextInput
         className="flex-1 p-0 text-2xl font-semibold text-foreground"
         editable={!!note}
-        onBlur={onBlurTitle}
         onChangeText={onChangeTitle}
         placeholder="Untitled"
         placeholderTextColor="#71717a"
         value={title}
       />
+      <Pressable
+        accessibilityLabel="Save note"
+        accessibilityRole="button"
+        className="ml-2 h-10 flex-row items-center justify-center gap-1.5 rounded-md px-3 opacity-100 disabled:opacity-40"
+        disabled={saveDisabled}
+        onPress={onSave}>
+        <Save size={20} color="#a1a1aa" />
+        <MText className="text-sm font-medium text-muted-foreground">Save</MText>
+      </Pressable>
     </View>
   )
 }
