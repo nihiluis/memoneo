@@ -1,11 +1,12 @@
 import { FlashList } from "@shopify/flash-list"
 import type { Note } from "@memoneo/shared"
-import { useRouter } from "expo-router"
+import { useRouter, useSegments } from "expo-router"
 import { useAtom } from "jotai"
 import { memo, useCallback, useEffect, useMemo } from "react"
 import { StyleSheet, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
+import { isFocusedRouteNotesHome } from "@/lib/navigation/isNotesHome"
 import { useNoteFoldersQuery } from "@/lib/notes/query"
 import {
   drawerExpandedFolderIdsAtom,
@@ -36,6 +37,7 @@ function DrawerNoteTreeListComponent({
   onOpenNoteOptions,
 }: DrawerNoteTreeListProps) {
   const router = useRouter()
+  const segments = useSegments()
   const { closeDrawer, drawerOpen } = useAppDrawer()
   const notesState = useNotesState()
   const foldersQuery = useNoteFoldersQuery()
@@ -87,9 +89,11 @@ function DrawerNoteTreeListComponent({
       console.log("selectNote", noteId)
       setSelectedNoteId(noteId)
       closeDrawer()
-      router.push("/")
+      if (!isFocusedRouteNotesHome(segments)) {
+        router.push("/")
+      }
     },
-    [closeDrawer, router, setSelectedNoteId]
+    [closeDrawer, router, segments, setSelectedNoteId]
   )
 
   const selectFolder = useCallback(

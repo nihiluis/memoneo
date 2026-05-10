@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "expo-router"
+import { useRouter, useSegments } from "expo-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useRef } from "react"
 import { Alert } from "react-native"
@@ -11,6 +11,7 @@ import {
   NOTES_FOLDERS_QUERY_KEY,
   NOTES_LOCAL_QUERY_KEY,
 } from "@/lib/notes/query"
+import { isFocusedRouteNotesHome } from "@/lib/navigation/isNotesHome"
 import {
   drawerExpandedFolderIdsAtom,
   selectedFolderIdAtom,
@@ -26,6 +27,7 @@ type SyncMutationKind = "download" | "upload" | "sync"
 
 export function useCreateNoteDrawerMutation() {
   const router = useRouter()
+  const segments = useSegments()
   const { closeDrawer } = useAppDrawer()
   const notesState = useNotesState()
   const setSelectedNoteId = useSetAtom(selectedNoteIdAtom)
@@ -41,7 +43,9 @@ export function useCreateNoteDrawerMutation() {
       setSelectedFolderId(getNoteFolderId(createdNote))
       await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
       closeDrawer()
-      router.push("/")
+      if (!isFocusedRouteNotesHome(segments)) {
+        router.push("/")
+      }
     },
     onError: error => {
       Alert.alert(

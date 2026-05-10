@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react"
+import { memo, useEffect, useMemo, useRef } from "react"
 import { StyleSheet, View } from "react-native"
 import {
   EnrichedMarkdownTextInput,
@@ -16,15 +16,47 @@ type NoteEditorBodyProps = {
   onBodyChange: (body: string) => void
 }
 
-export function NoteEditorBody({
+function areNoteEditorBodyPropsEqual(
+  prev: NoteEditorBodyProps,
+  next: NoteEditorBodyProps,
+): boolean {
+  const defaultBodyEq = prev.defaultBody === next.defaultBody
+  const noteIdEq = prev.noteId === next.noteId
+  const onBodyChangeEq = prev.onBodyChange === next.onBodyChange
+  if (defaultBodyEq && noteIdEq && onBodyChangeEq) {
+    return true
+  }
+  if (__DEV__) {
+    console.log("NoteEditorBody memo: props changed (re-render)", {
+      defaultBody: defaultBodyEq,
+      noteId: noteIdEq,
+      onBodyChange: onBodyChangeEq,
+    })
+  }
+  return false
+}
+
+function NoteEditorBodyComponent({
   defaultBody,
   noteId,
   onBodyChange,
 }: NoteEditorBodyProps) {
-  console.log("NoteEditorBody render")
+  if (__DEV__) {
+    console.log("NoteEditorBody render", JSON.stringify({ defaultBody, noteId }))
+  }
   const insets = useSafeAreaInsets()
   const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
 
+  useEffect(() => {
+    if (__DEV__) {
+      console.log("NoteEditorBody mount", noteId)
+    }
+    return () => {
+      if (__DEV__) {
+        console.log("NoteEditorBody unmount", noteId)
+      }
+    }
+  }, [noteId])
   const markdownStyle: MarkdownTextInputStyle = useMemo(
     () => ({
       strong: { color: "#f8fafc" },
@@ -61,6 +93,11 @@ export function NoteEditorBody({
     </KeyboardAvoidingView>
   )
 }
+
+export const NoteEditorBody = memo(
+  NoteEditorBodyComponent,
+  areNoteEditorBodyPropsEqual,
+)
 
 const styles = StyleSheet.create({
   editor: {
