@@ -4,9 +4,10 @@ import {
   ChevronRight,
   Folder,
 } from "lucide-react-native"
-import { Pressable, StyleSheet } from "react-native"
+import { Pressable } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
+import { cn } from "@/lib/reusables/utils"
 
 import { getNoteTitle, type TreeRow } from "./noteTree"
 
@@ -33,14 +34,11 @@ export function NoteTreeRow({
       <Pressable
         accessibilityRole="button"
         onPress={() => onToggleFolder(item.folder.id)}
-        style={[
-          styles.treeItem,
-          styles.folderItem,
-          { paddingLeft: getTreePadding(item.depth) },
-        ]}>
+        className="mt-1 min-h-10 flex-row items-center gap-2 rounded-md px-2 py-2"
+        style={{ paddingLeft: getTreePadding(item.depth) }}>
         <Chevron size={16} color="#a1a1aa" />
         <Folder size={18} color="#a1a1aa" />
-        <MText numberOfLines={1} style={styles.folderText}>
+        <MText numberOfLines={1} className="flex-1 font-semibold text-zinc-200">
           {item.folder.name}
         </MText>
       </Pressable>
@@ -54,14 +52,17 @@ export function NoteTreeRow({
       accessibilityRole="button"
       onLongPress={() => onOpenNoteOptions(item.note)}
       onPress={() => onSelectNote(item.note.id)}
-      style={[
-        styles.treeItem,
-        selected && styles.selectedNote,
-        { paddingLeft: getTreePadding(item.depth) },
-      ]}>
+      className={cn(
+        "min-h-10 flex-row items-center rounded-md px-2 py-2",
+        selected && "bg-zinc-800"
+      )}
+      style={{ paddingLeft: getTreePadding(item.depth) }}>
       <MText
         numberOfLines={1}
-        style={[styles.noteText, selected && styles.selectedNoteText]}>
+        className={cn(
+          "flex-1 text-zinc-300",
+          selected && "font-semibold text-zinc-50"
+        )}>
         {getNoteTitle(item.note)}
       </MText>
     </Pressable>
@@ -71,34 +72,3 @@ export function NoteTreeRow({
 function getTreePadding(depth: number) {
   return 8 + Math.min(depth, 8) * 16
 }
-
-const styles = StyleSheet.create({
-  folderItem: {
-    gap: 8,
-    marginTop: 4,
-  },
-  folderText: {
-    color: "#e4e4e7",
-    flex: 1,
-    fontWeight: "600",
-  },
-  noteText: {
-    color: "#d4d4d8",
-    flex: 1,
-  },
-  selectedNote: {
-    backgroundColor: "#27272a",
-  },
-  selectedNoteText: {
-    color: "#fafafa",
-    fontWeight: "600",
-  },
-  treeItem: {
-    alignItems: "center",
-    borderRadius: 6,
-    flexDirection: "row",
-    minHeight: 38,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-})

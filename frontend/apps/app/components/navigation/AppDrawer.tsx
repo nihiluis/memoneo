@@ -313,7 +313,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         handleIndicatorStyle={styles.sheetHandle}
         ref={noteOptionsSheetRef}
         snapPoints={["46%"]}>
-        <BottomSheetView style={styles.sheetContent}>
+        <BottomSheetView style={styles.flex}>
           {optionsNote && (
             <NoteOptionsSheet
               isDeleting={deleteNoteMutation.isPending}
@@ -330,16 +330,16 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   drawer: {
-    backgroundColor: "#09090b",
+    backgroundColor: "hsl(240 10% 3.9%)",
     width: DRAWER_WIDTH,
   },
   drawerOverlay: {
     backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   sheetBackground: {
-    backgroundColor: "#18181b",
+    backgroundColor: "hsl(240 3.7% 15.9%)",
   },
-  sheetContent: {
+  flex: {
     flex: 1,
   },
   sheetHandle: {

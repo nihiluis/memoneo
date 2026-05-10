@@ -1,5 +1,5 @@
 import type React from "react"
-import { Pressable, StyleSheet } from "react-native"
+import { Pressable } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 
@@ -15,27 +15,11 @@ export function DrawerAction({ icon, label, onPress }: DrawerActionProps) {
       accessibilityRole="button"
       disabled={!onPress}
       onPress={onPress}
-      style={styles.drawerAction}>
+      className="flex-1 items-center gap-1.5 rounded-md px-1 py-2.5">
       {icon}
-      <MText style={styles.drawerActionText}>{label}</MText>
+      <MText className="text-center text-xs font-medium text-zinc-300">
+        {label}
+      </MText>
     </Pressable>
   )
 }
-
-const styles = StyleSheet.create({
-  drawerAction: {
-    alignItems: "center",
-    borderRadius: 6,
-    flex: 1,
-    gap: 6,
-    minWidth: 0,
-    paddingHorizontal: 4,
-    paddingVertical: 10,
-  },
-  drawerActionText: {
-    color: "#d4d4d8",
-    fontSize: 12,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-})

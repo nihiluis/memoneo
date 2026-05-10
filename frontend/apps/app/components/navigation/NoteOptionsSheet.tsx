@@ -1,8 +1,9 @@
 import type { Note } from "@memoneo/shared"
 import { FileText, Trash2 } from "lucide-react-native"
-import { Pressable, StyleSheet, View } from "react-native"
+import { Pressable, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
+import { cn } from "@/lib/reusables/utils"
 
 type NoteOptionsSheetProps = {
   isDeleting: boolean
@@ -20,27 +21,27 @@ export function NoteOptionsSheet({
   const canDelete = Boolean(note.file?.title)
 
   return (
-    <View style={styles.sheetInner}>
-      <View style={styles.sheetHeader}>
+    <View className="flex-1 gap-2 px-5 pb-6 pt-2">
+      <View className="flex-row items-center gap-0">
         <FileText size={22} color="#fafafa" />
-        <View style={styles.sheetTitleGroup}>
-          <MText numberOfLines={1} style={styles.sheetDirectory}>
+        <View className="min-w-0 flex-1 gap-0">
+          <MText numberOfLines={1} className="text-xs text-zinc-400">
             {getNoteDirectory(note)}
           </MText>
-          <MText numberOfLines={1} style={styles.sheetTitle}>
+          <MText numberOfLines={1} className="text-xl font-bold text-zinc-50">
             {getNoteFileName(note)}
           </MText>
         </View>
       </View>
 
-      <View style={styles.compactMetadata}>
-        <MText numberOfLines={1} style={styles.compactMetadataText}>
+      <View className="gap-1 pb-3.5">
+        <MText numberOfLines={1} className="text-xs text-zinc-400">
           Created {formatDateTime(note.created_at)}
         </MText>
-        <MText numberOfLines={1} style={styles.compactMetadataText}>
+        <MText numberOfLines={1} className="text-xs text-zinc-400">
           Modified {formatDateTime(note.updated_at)}
         </MText>
-        <MText numberOfLines={1} style={styles.compactMetadataText}>
+        <MText numberOfLines={1} className="text-xs text-zinc-400">
           Last sync {lastSync ? formatDateTime(lastSync) : "Not synced"}
         </MText>
       </View>
@@ -49,12 +50,12 @@ export function NoteOptionsSheet({
         accessibilityRole="button"
         disabled={!canDelete || isDeleting}
         onPress={() => onDelete(note)}
-        style={[
-          styles.deleteAction,
-          (!canDelete || isDeleting) && styles.disabledAction,
-        ]}>
+        className={cn(
+          "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-red-900 px-3.5",
+          (!canDelete || isDeleting) && "opacity-50"
+        )}>
         <Trash2 size={18} color="#f87171" />
-        <MText style={styles.deleteActionText}>
+        <MText className="text-[15px] font-bold text-red-400">
           {isDeleting ? "Deleting..." : "Delete note"}
         </MText>
       </Pressable>
@@ -85,60 +86,3 @@ function formatDateTime(value: string | null | undefined) {
     timeStyle: "short",
   }).format(date)
 }
-
-const styles = StyleSheet.create({
-  compactMetadata: {
-    borderBottomColor: "#27272a",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 4,
-    paddingBottom: 14,
-  },
-  compactMetadataText: {
-    color: "#a1a1aa",
-    fontSize: 12,
-  },
-  deleteAction: {
-    alignItems: "center",
-    borderColor: "#7f1d1d",
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 8,
-    justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: 14,
-  },
-  deleteActionText: {
-    color: "#f87171",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  disabledAction: {
-    opacity: 0.5,
-  },
-  sheetDirectory: {
-    color: "#a1a1aa",
-    fontSize: 12,
-  },
-  sheetHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-  },
-  sheetInner: {
-    flex: 1,
-    gap: 18,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  sheetTitle: {
-    color: "#fafafa",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  sheetTitleGroup: {
-    flex: 1,
-    minWidth: 0,
-  },
-})

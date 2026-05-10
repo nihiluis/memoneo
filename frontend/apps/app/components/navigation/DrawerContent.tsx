@@ -37,19 +37,19 @@ export function DrawerContent({
   selectedNoteId,
 }: DrawerContentProps) {
   return (
-    <SafeAreaView style={styles.drawerContent}>
-      <View style={styles.drawerInner}>
+    <SafeAreaView className="bg-background" style={styles.flex}>
+      <View className="px-3 py-4" style={styles.flex}>
         {notesCount === 0 && !isLoading && (
-          <MText style={styles.emptyText}>No notes found.</MText>
+          <MText className="px-2 text-zinc-400">No notes found.</MText>
         )}
         <FlashList
-          contentContainerStyle={styles.treeContent}
+          contentContainerStyle={{ paddingBottom: 8 }}
           data={rows}
           extraData={{ expandedFolderIds, selectedNoteId }}
           keyExtractor={item => item.id}
           renderItem={renderTreeRow}
           showsVerticalScrollIndicator={false}
-          style={styles.treeList}
+          style={styles.flex}
         />
 
         <DrawerActions onOpenSettings={onOpenSettings} onSync={onSync} />
@@ -67,7 +67,7 @@ function DrawerActions({
 }) {
   return (
     <View>
-      <View style={styles.drawerActions}>
+      <View className="mt-3 flex-row gap-2 border-t border-border pt-3">
         <DrawerAction icon={<Plus size={32} color="#a1a1aa" />} label="New note" />
         <DrawerAction
           icon={<FolderPlus size={32} color="#a1a1aa" />}
@@ -79,7 +79,7 @@ function DrawerActions({
           onPress={() => onSync("download")}
         />
       </View>
-      <View style={styles.drawerActions}>
+      <View className="mt-3 flex-row gap-2 border-t border-border pt-3">
         <DrawerAction
           icon={<Upload size={32} color="#a1a1aa" />}
           label="Upload"
@@ -101,31 +101,7 @@ function DrawerActions({
 }
 
 const styles = StyleSheet.create({
-  drawerActions: {
-    borderTopColor: "#27272a",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-  },
-  drawerContent: {
-    backgroundColor: "#09090b",
-    flex: 1,
-  },
-  drawerInner: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-  },
-  emptyText: {
-    color: "#a1a1aa",
-    paddingHorizontal: 8,
-  },
-  treeContent: {
-    paddingBottom: 8,
-  },
-  treeList: {
+  flex: {
     flex: 1,
   },
 })
