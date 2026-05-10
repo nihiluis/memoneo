@@ -90,6 +90,20 @@ export async function deleteLocalMarkdownFile(fileInfo: MarkdownFileInfo) {
   }
 }
 
+export async function deleteLocalNote(note: Note) {
+  const fileTitle = note.file?.title
+  if (!fileTitle) {
+    return
+  }
+
+  const notesDir = ensureNotesDir()
+  const targetDir = ensureRelativeDirectory(notesDir, note.file?.path ?? "")
+  const file = new File(targetDir, `${fileTitle}.md`)
+  if (file.exists) {
+    file.delete()
+  }
+}
+
 async function listMarkdownFilesInDirectory(
   dir: Directory,
   relativePath: string

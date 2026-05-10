@@ -1,3 +1,4 @@
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
 import {
   DarkTheme,
   DefaultTheme,
@@ -72,11 +73,13 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <SetupProvider>
               <AuthProvider>
+                <BottomSheetModalProvider>
                   <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="auth/login" />
                     <Stack.Screen name="+not-found" />
                   </Stack>
+                </BottomSheetModalProvider>
               </AuthProvider>
             </SetupProvider>
           </QueryClientProvider>
