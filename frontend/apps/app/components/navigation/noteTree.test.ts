@@ -33,9 +33,10 @@ describe("note tree helpers", () => {
       note("c", "Charlie"),
     ])
 
-    expect(root.folders.map(folder => folder.name)).toEqual(["Unfiled", "Work"])
-    expect(root.folders[1].folders[0].name).toBe("Ideas")
-    expect(root.folders[1].notes.map(item => item.id)).toEqual(["b"])
+    expect(root.folders.map(folder => folder.name)).toEqual(["Work"])
+    expect(root.folders[0].folders[0].name).toBe("Ideas")
+    expect(root.folders[0].notes.map(item => item.id)).toEqual(["b"])
+    expect(root.notes.map(item => item.id)).toEqual(["c"])
   })
 
   it("includes empty local folders in the tree", () => {
@@ -53,14 +54,16 @@ describe("note tree helpers", () => {
     const root = buildNoteTree([
       note("a", "Alpha", "Work/Ideas"),
       note("b", "Bravo", "Work"),
+      note("c", "Charlie"),
     ])
 
     expect(flattenVisibleTree(root, new Set()).map(row => row.id)).toEqual([
       "folder:Work",
+      "note:c",
     ])
     expect(
       flattenVisibleTree(root, new Set(["Work", "Work/Ideas"])).map(row => row.id)
-    ).toEqual(["folder:Work", "folder:Work/Ideas", "note:a", "note:b"])
+    ).toEqual(["folder:Work", "folder:Work/Ideas", "note:a", "note:b", "note:c"])
   })
 
   it("returns ancestor folder ids for the selected note", () => {
@@ -77,10 +80,10 @@ describe("note tree helpers", () => {
     expect(getNoteTitle(note("a", "Remote", "", "Local"))).toBe("Local")
   })
 
-  it("maps notes and synthetic unfiled folders to creation targets", () => {
+  it("maps notes and folder ids to creation targets", () => {
     expect(getNoteFolderId(note("a", "Alpha", "Work/Ideas"))).toBe("Work/Ideas")
-    expect(getNoteFolderId(note("b", "Bravo"))).toBe("Unfiled")
-    expect(getFolderPathFromId("Unfiled")).toBe("")
+    expect(getNoteFolderId(note("b", "Bravo"))).toBe("")
+    expect(getFolderPathFromId("")).toBe("")
     expect(getFolderPathFromId("Work/Ideas")).toBe("Work/Ideas")
   })
 })

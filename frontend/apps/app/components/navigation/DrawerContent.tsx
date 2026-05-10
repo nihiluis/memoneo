@@ -12,7 +12,6 @@ import { Pressable, StyleSheet, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 import { MText } from "@/components/reusables/MText"
-import { cn } from "@/lib/reusables/utils"
 
 import { DrawerAction } from "./DrawerAction"
 import type { TreeRow } from "./noteTree"
@@ -27,7 +26,6 @@ type DrawerContentProps = {
   onCreateFolder: () => void
   onCreateNote: () => void
   onOpenSettings: () => void
-  onSelectRootFolder: () => void
   onSync: (action: "download" | "upload" | "sync") => void
   renderTreeRow: ListRenderItem<TreeRow>
   rows: TreeRow[]
@@ -45,7 +43,6 @@ export function DrawerContent({
   onCreateFolder,
   onCreateNote,
   onOpenSettings,
-  onSelectRootFolder,
   onSync,
   renderTreeRow,
   rows,
@@ -55,27 +52,6 @@ export function DrawerContent({
   return (
     <SafeAreaView className="bg-background" style={styles.flex}>
       <View className="px-3 py-4" style={styles.flex}>
-        <Pressable
-          accessibilityRole="button"
-          className={cn(
-            "mb-1 min-h-10 flex-row items-center gap-2 rounded-md border border-transparent px-2 py-2",
-            selectedFolderId === "" && "border-zinc-500"
-          )}
-          onPress={onSelectRootFolder}>
-          <Folder
-            size={18}
-            color={selectedFolderId === "" ? "#f8fafc" : "#a1a1aa"}
-          />
-          <MText
-            numberOfLines={1}
-            className={cn(
-              "flex-1 font-semibold text-zinc-200",
-              selectedFolderId === "" && "text-zinc-50"
-            )}>
-            Notes
-          </MText>
-        </Pressable>
-
         {notesCount === 0 && !isLoading && (
           <MText className="px-2 text-zinc-400">No notes found.</MText>
         )}

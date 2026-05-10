@@ -3,13 +3,8 @@ import type { Note } from "@memoneo/shared"
 import { useSetAtom } from "jotai"
 import { useEffect } from "react"
 
-import { getNoteFolderId } from "@/components/navigation/noteTree"
 import { LAST_OPENED_NOTE_KEY } from "@/lib/notes/query"
-import {
-  selectedFolderIdAtom,
-  selectedNoteAtom,
-  selectedNoteIdAtom,
-} from "@/lib/notes/state"
+import { selectedNoteAtom, selectedNoteIdAtom } from "@/lib/notes/state"
 
 type NoteSelectorProps = {
   isLoading: boolean
@@ -22,7 +17,6 @@ export function NoteSelector({
   notes,
   selectedNoteId,
 }: NoteSelectorProps) {
-  const setSelectedFolderId = useSetAtom(selectedFolderIdAtom)
   const setSelectedNote = useSetAtom(selectedNoteAtom)
   const setSelectedNoteId = useSetAtom(selectedNoteIdAtom)
 
@@ -68,15 +62,8 @@ export function NoteSelector({
       return
     }
 
-    setSelectedFolderId(getNoteFolderId(selectedNote))
     void AsyncStorage.setItem(LAST_OPENED_NOTE_KEY, selectedNote.id)
-  }, [
-    isLoading,
-    notes,
-    selectedNoteId,
-    setSelectedFolderId,
-    setSelectedNote,
-  ])
+  }, [isLoading, notes, selectedNoteId, setSelectedNote])
 
   return null
 }

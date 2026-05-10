@@ -404,7 +404,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
             onCreateFolder={() => createFolderMutation.mutate(selectedFolderId)}
             onCreateNote={() => createNoteMutation.mutate(selectedFolderId)}
             onOpenSettings={openSettings}
-            onSelectRootFolder={() => setSelectedFolderId("")}
             onSync={runSyncAction}
             renderTreeRow={renderTreeRow}
             rows={visibleRows}

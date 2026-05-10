@@ -92,14 +92,14 @@ export function getSelectedFolderIds(notes: Note[], selectedNoteId: string) {
 export function getNoteFolderId(note: Note) {
   const path = note.file?.path?.trim()
   if (!path) {
-    return "Unfiled"
+    return ""
   }
 
   return path.split(/[\\/]/).filter(Boolean).join("/")
 }
 
 export function getFolderPathFromId(folderId: string) {
-  return folderId === "Unfiled" ? "" : folderId
+  return folderId
 }
 
 export function getNoteTitle(note: Note) {
@@ -121,11 +121,11 @@ export function setsAreEqual<T>(left: Set<T>, right: Set<T>) {
 function getDirectorySegments(note: Note) {
   const path = note.file?.path?.trim()
   if (!path) {
-    return ["Unfiled"]
+    return []
   }
 
   const segments = path.split(/[\\/]/).filter(Boolean)
-  return segments.length > 0 ? segments : ["Unfiled"]
+  return segments
 }
 
 function ensureFolderPath(root: NoteTreeNode, segments: string[]) {
