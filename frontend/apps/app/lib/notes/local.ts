@@ -29,6 +29,11 @@ export async function listLocalMarkdownFiles(): Promise<MarkdownFileInfo[]> {
   return listMarkdownFilesInDirectory(dir, "")
 }
 
+export async function listLocalFolderPaths(): Promise<string[]> {
+  const dir = ensureNotesDir()
+  return listFolderPathsInDirectory(dir, "")
+}
+
 export async function listLocalNotes(): Promise<Note[]> {
   const files = await listLocalMarkdownFiles()
   return files.map(markdownFileToNote).sort((a, b) => getNoteTime(b) - getNoteTime(a))
@@ -60,23 +65,32 @@ export async function writeLocalNote(
   file.write(text)
 }
 
-export async function createLocalNote(title: string, body: string) {
+export async function createLocalNote(title: string, body: string, path = "") {
   const now = new Date()
-  const fileTitle = await uniqueFileTitle(title || DEFAULT_NOTE_FILE_NAME)
+  const fileTitle = await uniqueFileTitle(title || DEFAULT_NOTE_FILE_NAME, path)
   const note = {
     ...createUnsavedNote(now),
-    id: `local:${fileTitle}`,
+    id: `local:${[path, fileTitle].filter(Boolean).join("/")}`,
     title: title || fileTitle,
     body,
     decryptedBody: body,
     file: {
       title: fileTitle,
-      path: "",
+      path,
     },
   } satisfies Note
 
-  await writeLocalNote(note, body, { title: fileTitle, path: "" })
+  await writeLocalNote(note, body, { title: fileTitle, path })
   return note
+}
+
+export async function createLocalFolder(parentPath = "", name = "New folder") {
+  const notesDir = ensureNotesDir()
+  const targetParent = ensureRelativeDirectory(notesDir, parentPath)
+  const folderName = uniqueDirectoryName(targetParent, name)
+  const folder = new Directory(targetParent, folderName)
+  folder.create({ intermediates: true })
+  return joinRelativePath(parentPath, folderName)
 }
 
 export async function deleteLocalMarkdownFile(fileInfo: MarkdownFileInfo) {
@@ -102,6 +116,14 @@ export async function deleteLocalNote(note: Note) {
   if (file.exists) {
     file.delete()
   }
+}
+
+export async function deleteAllLocalNotes() {
+  const notesDir = getNotesDir()
+  if (notesDir.exists) {
+    notesDir.delete()
+  }
+  ensureNotesDir()
 }
 
 async function listMarkdownFilesInDirectory(
@@ -142,6 +164,24 @@ async function listMarkdownFilesInDirectory(
   return files
 }
 
+async function listFolderPathsInDirectory(
+  dir: Directory,
+  relativePath: string
+): Promise<string[]> {
+  const paths: string[] = []
+
+  for (const item of dir.list()) {
+    if (!(item instanceof Directory)) {
+      continue
+    }
+
+    const path = joinRelativePath(relativePath, item.name)
+    paths.push(path, ...(await listFolderPathsInDirectory(item, path)))
+  }
+
+  return paths.sort((a, b) => a.localeCompare(b))
+}
+
 function ensureRelativeDirectory(root: Directory, relativePath: string) {
   let current = root
   for (const segment of relativePath.split("/").filter(Boolean)) {
@@ -153,10 +193,34 @@ function ensureRelativeDirectory(root: Directory, relativePath: string) {
   return current
 }
 
-async function uniqueFileTitle(title: string) {
+async function uniqueFileTitle(title: string, path: string) {
   const notes = await listLocalNotes()
-  const existing = new Set(notes.map(note => note.file?.title).filter(Boolean))
+  const existing = new Set(
+    notes
+      .filter(note => (note.file?.path ?? "") === path)
+      .map(note => note.file?.title)
+      .filter(Boolean)
+  )
   const base = sanitizeFileSegment(title) || DEFAULT_NOTE_FILE_NAME
+  let next = base
+  let index = 2
+
+  while (existing.has(next)) {
+    next = `${base} ${index}`
+    index += 1
+  }
+
+  return next
+}
+
+function uniqueDirectoryName(parent: Directory, name: string) {
+  const existing = new Set(
+    parent
+      .list()
+      .filter(item => item instanceof Directory)
+      .map(item => item.name)
+  )
+  const base = sanitizeFileSegment(name)
   let next = base
   let index = 2
 

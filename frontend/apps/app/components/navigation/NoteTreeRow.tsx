@@ -4,7 +4,7 @@ import {
   ChevronRight,
   Folder,
 } from "lucide-react-native"
-import { Pressable } from "react-native"
+import { Pressable, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
@@ -15,8 +15,10 @@ type NoteTreeRowProps = {
   expanded: boolean
   item: TreeRow
   onOpenNoteOptions: (note: Note) => void
+  onSelectFolder: (folderId: string) => void
   onSelectNote: (noteId: string) => void
   onToggleFolder: (folderId: string) => void
+  selectedFolderId: string
   selectedNoteId: string
 }
 
@@ -24,24 +26,44 @@ export function NoteTreeRow({
   expanded,
   item,
   onOpenNoteOptions,
+  onSelectFolder,
   onSelectNote,
   onToggleFolder,
+  selectedFolderId,
   selectedNoteId,
 }: NoteTreeRowProps) {
   if (item.kind === "folder") {
     const Chevron = expanded ? ChevronDown : ChevronRight
+    const selected = item.folder.id === selectedFolderId
     return (
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => onToggleFolder(item.folder.id)}
-        className="mt-1 min-h-10 flex-row items-center gap-2 rounded-md px-2 py-2"
+      <View
+        className={cn(
+          "mt-1 min-h-10 flex-row items-center rounded-md border border-transparent py-1",
+          selected && "border-zinc-500"
+        )}
         style={{ paddingLeft: getTreePadding(item.depth) }}>
-        <Chevron size={16} color="#a1a1aa" />
-        <Folder size={18} color="#a1a1aa" />
-        <MText numberOfLines={1} className="flex-1 font-semibold text-zinc-200">
-          {item.folder.name}
-        </MText>
-      </Pressable>
+        <Pressable
+          accessibilityLabel={expanded ? "Collapse folder" : "Expand folder"}
+          accessibilityRole="button"
+          className="h-8 w-8 items-center justify-center"
+          onPress={() => onToggleFolder(item.folder.id)}>
+          <Chevron size={16} color="#a1a1aa" />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => onSelectFolder(item.folder.id)}
+          className="min-h-8 flex-1 flex-row items-center gap-2 pr-2">
+          <Folder size={18} color={selected ? "#f8fafc" : "#a1a1aa"} />
+          <MText
+            numberOfLines={1}
+            className={cn(
+              "flex-1 font-semibold text-zinc-200",
+              selected && "text-zinc-50"
+            )}>
+            {item.folder.name}
+          </MText>
+        </Pressable>
+      </View>
     )
   }
 

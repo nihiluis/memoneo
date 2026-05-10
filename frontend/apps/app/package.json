@@ -8,11 +8,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --watchAll",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "expo lint"
-  },
-  "jest": {
-    "preset": "jest-expo"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -73,6 +71,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@tailwindcss/postcss": "^4.2.4",
+    "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.12",
     "@types/react": "^19.1.1",
     "@types/react-test-renderer": "^19.1.0",
@@ -83,7 +82,9 @@
     "jest-expo": "~55.0.17",
     "postcss": "^8.5.14",
     "react-test-renderer": "19.2.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^3.2.4"
   },
   "private": true
 }

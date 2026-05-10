@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -24,10 +23,20 @@ import { Drawer } from "react-native-drawer-layout"
 
 import { authAtom, tokenAtom } from "@/lib/auth/state"
 import { loadNoteCache } from "@/lib/notes/cache"
-import { deleteLocalNote } from "@/lib/notes/local"
-import { LAST_OPENED_NOTE_KEY, useNotesQuery } from "@/lib/notes/query"
+import {
+  createLocalFolder,
+  createLocalNote,
+  deleteLocalNote,
+} from "@/lib/notes/local"
+import {
+  NOTES_CACHE_QUERY_KEY,
+  NOTES_FOLDERS_QUERY_KEY,
+  NOTES_LOCAL_QUERY_KEY,
+  useNoteFoldersQuery,
+  useNotesQuery,
+} from "@/lib/notes/query"
 import { downloadRemoteNotes, syncNotes, uploadLocalNotes } from "@/lib/notes/sync"
-import { selectedNoteIdAtom } from "@/lib/notes/state"
+import { selectedFolderIdAtom, selectedNoteIdAtom } from "@/lib/notes/state"
 
 import { DrawerContent } from "./DrawerContent"
 import { getNoteFileName, NoteOptionsSheet } from "./NoteOptionsSheet"
@@ -35,6 +44,8 @@ import { NoteTreeRow } from "./NoteTreeRow"
 import {
   buildNoteTree,
   flattenVisibleTree,
+  getFolderPathFromId,
+  getNoteFolderId,
   getSelectedFolderIds,
   setsAreEqual,
   type TreeRow,
@@ -66,16 +77,23 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optionsNote, setOptionsNote] = useState<Note | null>(null)
   const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
+  const [selectedFolderId, setSelectedFolderId] = useAtom(selectedFolderIdAtom)
   const noteOptionsSheetRef = useRef<BottomSheetModal>(null)
+  const syncInProgressRef = useRef(false)
 
   const notesQuery = useNotesQuery()
+  const foldersQuery = useNoteFoldersQuery()
   const noteCacheQuery = useQuery({
-    queryKey: ["notes", "cache"],
+    queryKey: NOTES_CACHE_QUERY_KEY,
     queryFn: loadNoteCache,
   })
 
   const notes = useMemo(() => notesQuery.data ?? [], [notesQuery.data])
-  const noteTree = useMemo(() => buildNoteTree(notes), [notes])
+  const folderPaths = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data])
+  const noteTree = useMemo(
+    () => buildNoteTree(notes, folderPaths),
+    [folderPaths, notes]
+  )
   const selectedFolderIds = useMemo(
     () => getSelectedFolderIds(notes, selectedNoteId),
     [notes, selectedNoteId]
@@ -103,17 +121,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
       return setsAreEqual(current, next) ? current : next
     })
   }, [selectedFolderIds])
-
-  useEffect(() => {
-    if (notes.length === 0 || selectedNoteId) {
-      return
-    }
-
-    AsyncStorage.getItem(LAST_OPENED_NOTE_KEY).then(lastOpenedNoteId => {
-      const lastOpenedNote = notes.find(note => note.id === lastOpenedNoteId)
-      setSelectedNoteId((lastOpenedNote ?? notes[0])?.id ?? "")
-    })
-  }, [notes, selectedNoteId, setSelectedNoteId])
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false)
@@ -143,18 +150,26 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
       }
       return syncNotes(syncAuth)
     },
-    onSuccess: async result => {
-      await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
-      await queryClient.invalidateQueries({ queryKey: ["notes", "cache"] })
-      Alert.alert(
-        "Notes synced",
-        [
-          `Downloaded: ${result.downloaded}`,
-          `Uploaded: ${result.uploaded}`,
-          `Updated local: ${result.updatedLocal}`,
-          `Updated remote: ${result.updatedRemote}`,
-        ].join("\n")
-      )
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: NOTES_FOLDERS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: NOTES_CACHE_QUERY_KEY }),
+      ])
+      await Promise.all([
+        queryClient.refetchQueries({
+          queryKey: NOTES_LOCAL_QUERY_KEY,
+          type: "active",
+        }),
+        queryClient.refetchQueries({
+          queryKey: NOTES_FOLDERS_QUERY_KEY,
+          type: "active",
+        }),
+        queryClient.refetchQueries({
+          queryKey: NOTES_CACHE_QUERY_KEY,
+          type: "active",
+        }),
+      ])
     },
     onError: error => {
       Alert.alert(
@@ -162,17 +177,100 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         error instanceof Error ? error.message : String(error)
       )
     },
+    onSettled: () => {
+      syncInProgressRef.current = false
+    },
   })
 
+  const runSyncAction = useCallback(
+    (action: "download" | "upload" | "sync") => {
+      if (syncInProgressRef.current || syncMutation.isPending) {
+        return
+      }
+
+      syncInProgressRef.current = true
+      syncMutation.mutate(action)
+    },
+    [syncMutation]
+  )
+
   const selectNote = useCallback(
-    async (noteId: string) => {
+    (noteId: string) => {
       setSelectedNoteId(noteId)
-      await AsyncStorage.setItem(LAST_OPENED_NOTE_KEY, noteId)
       closeDrawer()
       router.push("/")
     },
     [closeDrawer, router, setSelectedNoteId]
   )
+
+  const selectFolder = useCallback(
+    (folderId: string) => {
+      setSelectedFolderId(folderId)
+      setExpandedFolderIds(current => {
+        if (current.has(folderId)) {
+          return current
+        }
+        const next = new Set(current)
+        next.add(folderId)
+        return next
+      })
+    },
+    [setSelectedFolderId]
+  )
+
+  const createNoteMutation = useMutation({
+    mutationFn: async (folderId: string) =>
+      createLocalNote("Untitled", "", getFolderPathFromId(folderId)),
+    onSuccess: async createdNote => {
+      queryClient.setQueryData<Note[]>(NOTES_LOCAL_QUERY_KEY, current => [
+        createdNote,
+        ...(current ?? []).filter(note => note.id !== createdNote.id),
+      ])
+      setSelectedNoteId(createdNote.id)
+      setSelectedFolderId(getNoteFolderId(createdNote))
+      await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
+      closeDrawer()
+      router.push("/")
+    },
+    onError: error => {
+      Alert.alert(
+        "Create note failed",
+        error instanceof Error ? error.message : String(error)
+      )
+    },
+  })
+
+  const createFolderMutation = useMutation({
+    mutationFn: async (folderId: string) =>
+      createLocalFolder(getFolderPathFromId(folderId)),
+    onSuccess: async folderId => {
+      queryClient.setQueryData<string[]>(NOTES_FOLDERS_QUERY_KEY, current =>
+        [...new Set([...(current ?? []), folderId])].sort((a, b) =>
+          a.localeCompare(b)
+        )
+      )
+      await queryClient.invalidateQueries({ queryKey: NOTES_FOLDERS_QUERY_KEY })
+      setSelectedFolderId(folderId)
+      setExpandedFolderIds(current => {
+        const next = new Set(current)
+        const segments = folderId.split("/").filter(Boolean)
+        let currentFolderId = ""
+        segments.forEach(segment => {
+          currentFolderId = currentFolderId
+            ? `${currentFolderId}/${segment}`
+            : segment
+          next.add(currentFolderId)
+        })
+        return setsAreEqual(current, next) ? current : next
+      })
+    },
+    onError: error => {
+      Alert.alert(
+        "Create folder failed",
+        error instanceof Error ? error.message : String(error)
+      )
+    },
+  })
 
   const openNoteOptions = useCallback((note: Note) => {
     setOptionsNote(note)
@@ -187,7 +285,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     mutationFn: deleteLocalNote,
     onSuccess: async (_result, deletedNote) => {
       closeNoteOptions()
-      await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
+      await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
 
       if (selectedNoteId !== deletedNote.id) {
         return
@@ -195,11 +293,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
 
       const nextNoteId = notes.find(note => note.id !== deletedNote.id)?.id ?? ""
       setSelectedNoteId(nextNoteId)
-      if (nextNoteId) {
-        await AsyncStorage.setItem(LAST_OPENED_NOTE_KEY, nextNoteId)
-      } else {
-        await AsyncStorage.removeItem(LAST_OPENED_NOTE_KEY)
-      }
     },
     onError: error => {
       Alert.alert(
@@ -253,12 +346,22 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         }
         item={item}
         onOpenNoteOptions={openNoteOptions}
+        onSelectFolder={selectFolder}
         onSelectNote={selectNote}
         onToggleFolder={toggleFolder}
+        selectedFolderId={selectedFolderId}
         selectedNoteId={selectedNoteId}
       />
     ),
-    [expandedFolderIds, openNoteOptions, selectNote, selectedNoteId, toggleFolder]
+    [
+      expandedFolderIds,
+      openNoteOptions,
+      selectFolder,
+      selectNote,
+      selectedFolderId,
+      selectedNoteId,
+      toggleFolder,
+    ]
   )
 
   const renderBackdrop = useCallback(
@@ -293,12 +396,19 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         renderDrawerContent={() => (
           <DrawerContent
             expandedFolderIds={expandedFolderIds}
-            isLoading={notesQuery.isLoading}
+            isCreatingFolder={createFolderMutation.isPending}
+            isCreatingNote={createNoteMutation.isPending}
+            isLoading={notesQuery.isLoading || foldersQuery.isLoading}
+            isSyncing={syncMutation.isPending || syncInProgressRef.current}
             notesCount={notes.length}
+            onCreateFolder={() => createFolderMutation.mutate(selectedFolderId)}
+            onCreateNote={() => createNoteMutation.mutate(selectedFolderId)}
             onOpenSettings={openSettings}
-            onSync={action => syncMutation.mutate(action)}
+            onSelectRootFolder={() => setSelectedFolderId("")}
+            onSync={runSyncAction}
             renderTreeRow={renderTreeRow}
             rows={visibleRows}
+            selectedFolderId={selectedFolderId}
             selectedNoteId={selectedNoteId}
           />
         )}

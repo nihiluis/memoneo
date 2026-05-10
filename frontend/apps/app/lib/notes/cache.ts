@@ -22,3 +22,7 @@ export async function loadNoteCache(): Promise<LocalNoteCache> {
 export async function saveNoteCache(cache: LocalNoteCache) {
   await AsyncStorage.setItem(NOTE_CACHE_KEY, JSON.stringify(cache))
 }
+
+export async function resetNoteCache() {
+  await AsyncStorage.removeItem(NOTE_CACHE_KEY)
+}

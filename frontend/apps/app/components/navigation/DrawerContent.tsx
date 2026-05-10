@@ -1,79 +1,142 @@
 import { FlashList, type ListRenderItem } from "@shopify/flash-list"
 import {
   Download,
+  Folder,
   FolderPlus,
   Plus,
   RefreshCw,
   Settings,
   Upload,
 } from "lucide-react-native"
-import { StyleSheet, View } from "react-native"
+import { Pressable, StyleSheet, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 import { MText } from "@/components/reusables/MText"
+import { cn } from "@/lib/reusables/utils"
 
 import { DrawerAction } from "./DrawerAction"
 import type { TreeRow } from "./noteTree"
 
 type DrawerContentProps = {
   expandedFolderIds: Set<string>
+  isCreatingFolder: boolean
+  isCreatingNote: boolean
   isLoading: boolean
+  isSyncing: boolean
   notesCount: number
+  onCreateFolder: () => void
+  onCreateNote: () => void
   onOpenSettings: () => void
+  onSelectRootFolder: () => void
   onSync: (action: "download" | "upload" | "sync") => void
   renderTreeRow: ListRenderItem<TreeRow>
   rows: TreeRow[]
+  selectedFolderId: string
   selectedNoteId: string
 }
 
 export function DrawerContent({
   expandedFolderIds,
+  isCreatingFolder,
+  isCreatingNote,
   isLoading,
+  isSyncing,
   notesCount,
+  onCreateFolder,
+  onCreateNote,
   onOpenSettings,
+  onSelectRootFolder,
   onSync,
   renderTreeRow,
   rows,
+  selectedFolderId,
   selectedNoteId,
 }: DrawerContentProps) {
   return (
     <SafeAreaView className="bg-background" style={styles.flex}>
       <View className="px-3 py-4" style={styles.flex}>
+        <Pressable
+          accessibilityRole="button"
+          className={cn(
+            "mb-1 min-h-10 flex-row items-center gap-2 rounded-md border border-transparent px-2 py-2",
+            selectedFolderId === "" && "border-zinc-500"
+          )}
+          onPress={onSelectRootFolder}>
+          <Folder
+            size={18}
+            color={selectedFolderId === "" ? "#f8fafc" : "#a1a1aa"}
+          />
+          <MText
+            numberOfLines={1}
+            className={cn(
+              "flex-1 font-semibold text-zinc-200",
+              selectedFolderId === "" && "text-zinc-50"
+            )}>
+            Notes
+          </MText>
+        </Pressable>
+
         {notesCount === 0 && !isLoading && (
           <MText className="px-2 text-zinc-400">No notes found.</MText>
         )}
         <FlashList
           contentContainerStyle={{ paddingBottom: 8 }}
           data={rows}
-          extraData={{ expandedFolderIds, selectedNoteId }}
+          extraData={{ expandedFolderIds, selectedFolderId, selectedNoteId }}
           keyExtractor={item => item.id}
           renderItem={renderTreeRow}
           showsVerticalScrollIndicator={false}
           style={styles.flex}
         />
 
-        <DrawerActions onOpenSettings={onOpenSettings} onSync={onSync} />
+        <DrawerActions
+          isCreatingFolder={isCreatingFolder}
+          isCreatingNote={isCreatingNote}
+          isSyncing={isSyncing}
+          onCreateFolder={onCreateFolder}
+          onCreateNote={onCreateNote}
+          onOpenSettings={onOpenSettings}
+          onSync={onSync}
+        />
       </View>
     </SafeAreaView>
   )
 }
 
 function DrawerActions({
+  isCreatingFolder,
+  isCreatingNote,
+  isSyncing,
+  onCreateFolder,
+  onCreateNote,
   onOpenSettings,
   onSync,
 }: {
+  isCreatingFolder: boolean
+  isCreatingNote: boolean
+  isSyncing: boolean
+  onCreateFolder: () => void
+  onCreateNote: () => void
   onOpenSettings: () => void
   onSync: (action: "download" | "upload" | "sync") => void
 }) {
   return (
     <View>
       <View className="mt-3 flex-row gap-2 border-t border-border pt-3">
-        <DrawerAction icon={<Plus size={32} color="#a1a1aa" />} label="New note" />
         <DrawerAction
-          icon={<FolderPlus size={32} color="#a1a1aa" />}
-          label="New folder"
+          disabled={isCreatingNote}
+          icon={<Plus size={32} color="#a1a1aa" />}
+          label="New note"
+          onPress={onCreateNote}
         />
         <DrawerAction
+          disabled={isCreatingFolder}
+          icon={<FolderPlus size={32} color="#a1a1aa" />}
+          label="New folder"
+          onPress={onCreateFolder}
+        />
+        <DrawerAction
+          disabled={isSyncing}
           icon={<Download size={32} color="#a1a1aa" />}
           label="Download"
           onPress={() => onSync("download")}
@@ -81,11 +144,13 @@ function DrawerActions({
       </View>
       <View className="mt-3 flex-row gap-2 border-t border-border pt-3">
         <DrawerAction
+          disabled={isSyncing}
           icon={<Upload size={32} color="#a1a1aa" />}
           label="Upload"
           onPress={() => onSync("upload")}
         />
         <DrawerAction
+          disabled={isSyncing}
           icon={<RefreshCw size={32} color="#a1a1aa" />}
           label="Sync"
           onPress={() => onSync("sync")}

@@ -1,16 +1,16 @@
 import { useAtomValue } from "jotai"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
+import { NoteSelector } from "@/components/note/NoteSelector"
 import { NoteReader } from "@/components/note/editor/NoteReader"
 import { useNotesQuery } from "@/lib/notes/query"
-import { selectedNoteIdAtom } from "@/lib/notes/state"
+import { selectedNoteAtom, selectedNoteIdAtom } from "@/lib/notes/state"
 
 export default function NotesScreen() {
   const selectedNoteId = useAtomValue(selectedNoteIdAtom)
+  const selectedNote = useAtomValue(selectedNoteAtom)
   const notesQuery = useNotesQuery()
   const notes = notesQuery.data ?? []
-  const selectedNote =
-    notes.find(note => note.id === selectedNoteId) ?? notes[0] ?? null
   const insets = useSafeAreaInsets()
 
   return (
@@ -18,6 +18,11 @@ export default function NotesScreen() {
       className="bg-background"
       edges={["top", "left", "right"]}
       style={{ flex: 1 }}>
+      <NoteSelector
+        isLoading={notesQuery.isLoading}
+        notes={notes}
+        selectedNoteId={selectedNoteId}
+      />
       <NoteReader
         bottomInset={insets.bottom}
         error={notesQuery.error}

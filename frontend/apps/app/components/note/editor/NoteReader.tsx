@@ -12,6 +12,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 
 import { MText } from "@/components/reusables/MText"
 import { createLocalNote, writeLocalNote } from "@/lib/notes/local"
+import { NOTES_LOCAL_QUERY_KEY } from "@/lib/notes/query"
 
 import { MarkdownToolbar } from "./MarkdownToolbar"
 import { NoteHeader } from "./NoteHeader"
@@ -117,7 +118,7 @@ export function NoteReader({
       }
     }
 
-    await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
+    await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
   }, [clearScheduledSave, queryClient])
 
   useEffect(() => {
@@ -206,6 +207,14 @@ export function NoteReader({
         <View className="flex-1 justify-center px-6">
           <MText className="text-center text-destructive">
             Failed to load notes.
+          </MText>
+        </View>
+      )}
+
+      {!isLoading && !error && !note && (
+        <View className="flex-1 items-center justify-center px-6">
+          <MText className="text-center text-muted-foreground">
+            No note selected.
           </MText>
         </View>
       )}

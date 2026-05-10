@@ -21,27 +21,18 @@ export type TreeRow =
       note: Note
     }
 
-export function buildNoteTree(notes: Note[]): NoteTreeNode {
+export function buildNoteTree(
+  notes: Note[],
+  folderPaths: readonly string[] = []
+): NoteTreeNode {
   const root: NoteTreeNode = { id: "", name: "root", folders: [], notes: [] }
 
+  folderPaths.forEach(path => {
+    ensureFolderPath(root, path.split(/[\\/]/).filter(Boolean))
+  })
+
   notes.forEach(note => {
-    let current = root
-    const segments = getDirectorySegments(note)
-
-    segments.forEach(segment => {
-      let folder = current.folders.find(item => item.name === segment)
-      if (!folder) {
-        folder = {
-          id: getFolderId(current.id, segment),
-          name: segment,
-          folders: [],
-          notes: [],
-        }
-        current.folders.push(folder)
-      }
-      current = folder
-    })
-
+    const current = ensureFolderPath(root, getDirectorySegments(note))
     current.notes.push(note)
   })
 
@@ -98,6 +89,19 @@ export function getSelectedFolderIds(notes: Note[], selectedNoteId: string) {
   return folderIds
 }
 
+export function getNoteFolderId(note: Note) {
+  const path = note.file?.path?.trim()
+  if (!path) {
+    return "Unfiled"
+  }
+
+  return path.split(/[\\/]/).filter(Boolean).join("/")
+}
+
+export function getFolderPathFromId(folderId: string) {
+  return folderId === "Unfiled" ? "" : folderId
+}
+
 export function getNoteTitle(note: Note) {
   return note.file?.title ?? note.title
 }
@@ -122,6 +126,26 @@ function getDirectorySegments(note: Note) {
 
   const segments = path.split(/[\\/]/).filter(Boolean)
   return segments.length > 0 ? segments : ["Unfiled"]
+}
+
+function ensureFolderPath(root: NoteTreeNode, segments: string[]) {
+  let current = root
+
+  segments.forEach(segment => {
+    let folder = current.folders.find(item => item.name === segment)
+    if (!folder) {
+      folder = {
+        id: getFolderId(current.id, segment),
+        name: segment,
+        folders: [],
+        notes: [],
+      }
+      current.folders.push(folder)
+    }
+    current = folder
+  })
+
+  return current
 }
 
 function sortTree(node: NoteTreeNode) {
