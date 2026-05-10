@@ -3,10 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, Alert, View } from "react-native"
-import type {
-  EnrichedMarkdownTextInputInstance,
-  StyleState,
-} from "react-native-enriched-markdown"
 
 import { MText } from "@/components/reusables/MText"
 import { createLocalNote, writeLocalNote } from "@/lib/notes/local"
@@ -18,7 +14,6 @@ import { selectedNoteAtom, selectedNoteIdAtom, useNotesState } from "@/lib/notes
 
 import { NoteEditorBody } from "./NoteEditorBody"
 import { NoteHeader } from "./NoteHeader"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 type DraftSnapshot = {
   noteId: string
@@ -31,18 +26,18 @@ type SaveVariables = {
   draft: DraftSnapshot
 }
 
+function draftsEqual(a: DraftSnapshot, b: DraftSnapshot) {
+  return a.noteId === b.noteId && a.title === b.title && a.body === b.body
+}
+
 export function NoteReader() {
-  const insets = useSafeAreaInsets()
   const { error, isLoading } = useNotesState()
   const note = useAtomValue(selectedNoteAtom)
 
-  const [body, setBody] = useState("")
   const [title, setTitle] = useState("")
-  const [styleState, setStyleState] = useState<StyleState | null>(null)
-  const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
   const noteRef = useRef<Note | null>(null)
-  const draftRef = useRef<DraftSnapshot | null>(null)
-  const lastSavedDraftRef = useRef<DraftSnapshot | null>(null)
+  const titleRef = useRef("")
+  const bodyRef = useRef("")
   const hydratedNoteIdRef = useRef<string | null>(null)
   const queryClient = useQueryClient()
   const setSelectedNoteId = useSetAtom(selectedNoteIdAtom)
@@ -74,25 +69,21 @@ export function NoteReader() {
       upsertNoteInLocalQueryCache(queryClient, result.note)
 
       if (result.kind === "created") {
-        // Only adopt the new id/draft if the user hasn't switched away mid-save.
+        const n = noteRef.current
+        const currentDraft: DraftSnapshot | null = n
+          ? { noteId: n.id, title: titleRef.current, body: bodyRef.current }
+          : null
+        // Only sync local title/body if the user hasn't edited since this save.
         if (
-          draftRef.current === result.draft &&
-          noteRef.current?.id === "unsaved"
+          currentDraft &&
+          draftsEqual(currentDraft, result.draft) &&
+          n?.id === "unsaved"
         ) {
-          const createdDraft = {
-            noteId: result.note.id,
-            title: result.note.title,
-            body: result.note.body,
-          }
-          draftRef.current = createdDraft
-          lastSavedDraftRef.current = createdDraft
+          bodyRef.current = result.note.body
+          titleRef.current = result.note.title
+          setTitle(result.note.title)
         }
         setSelectedNoteId(result.note.id)
-      } else if (
-        draftRef.current === result.draft &&
-        noteRef.current?.id === result.note.id
-      ) {
-        lastSavedDraftRef.current = result.draft
       }
 
       await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
@@ -109,12 +100,25 @@ export function NoteReader() {
 
   const handleSave = useCallback(() => {
     const currentNote = noteRef.current
-    const draft = draftRef.current
-    if (!currentNote || !draft || saveNoteMutation.isPending) {
+    if (!currentNote || saveNoteMutation.isPending) {
       return
+    }
+    const draft: DraftSnapshot = {
+      noteId: currentNote.id,
+      title: titleRef.current,
+      body: bodyRef.current,
     }
     saveNoteMutation.mutate({ note: currentNote, draft })
   }, [saveNoteMutation])
+
+  const handleChangeTitle = useCallback((nextTitle: string) => {
+    setTitle(nextTitle)
+    titleRef.current = nextTitle
+  }, [])
+
+  const handleBodyChange = useCallback((nextBody: string) => {
+    bodyRef.current = nextBody
+  }, [])
 
   // When the selected note (or its id) changes: sync refs, reset draft/saved snapshots,
   // and hydrate title/body/style from the server note. Same id + new object only updates noteRef.
@@ -128,26 +132,13 @@ export function NoteReader() {
     hydratedNoteIdRef.current = noteId
     noteRef.current = note
 
-    const nextDraft = {
-      noteId: note?.id ?? "",
-      title: note?.title ?? "",
-      body: note?.body ?? "",
-    }
+    const nextTitle = note?.title ?? ""
+    const nextBody = note?.body ?? ""
 
-    draftRef.current = nextDraft
-    lastSavedDraftRef.current = nextDraft
-    setBody(nextDraft.body)
-    setTitle(nextDraft.title)
-    setStyleState(null)
+    titleRef.current = nextTitle
+    bodyRef.current = nextBody
+    setTitle(nextTitle)
   }, [note])
-
-  // Keep draftRef aligned with live title/body so saveDraft reads the latest text without stale closures.
-  useEffect(() => {
-    if (!note) {
-      return
-    }
-    draftRef.current = { noteId: note.id, title, body }
-  }, [note, title, body])
 
   return (
     <View className="flex-1">
@@ -155,7 +146,7 @@ export function NoteReader() {
         note={note}
         saveDisabled={!note || isSaving}
         title={title}
-        onChangeTitle={setTitle}
+        onChangeTitle={handleChangeTitle}
         onSave={handleSave}
       />
 
@@ -183,13 +174,9 @@ export function NoteReader() {
 
       {!isLoading && !error && note && (
         <NoteEditorBody
-          bottomInset={insets.bottom}
           defaultBody={note.body}
-          editorRef={editorRef}
           noteId={note.id}
-          onBodyChange={setBody}
-          onStyleStateChange={setStyleState}
-          styleState={styleState}
+          onBodyChange={handleBodyChange}
         />
       )}
     </View>

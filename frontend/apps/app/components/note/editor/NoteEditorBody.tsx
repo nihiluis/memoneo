@@ -1,34 +1,30 @@
-import { useMemo, type RefObject } from "react"
+import { useMemo, useRef } from "react"
 import { StyleSheet, View } from "react-native"
 import {
   EnrichedMarkdownTextInput,
   type EnrichedMarkdownTextInputInstance,
   type MarkdownTextInputStyle,
-  type StyleState,
 } from "react-native-enriched-markdown"
 import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 
 import { MarkdownToolbar } from "./MarkdownToolbar"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 type NoteEditorBodyProps = {
-  bottomInset: number
   defaultBody: string
-  editorRef: RefObject<EnrichedMarkdownTextInputInstance | null>
   noteId: string
   onBodyChange: (body: string) => void
-  onStyleStateChange: (state: StyleState | null) => void
-  styleState: StyleState | null
 }
 
 export function NoteEditorBody({
-  bottomInset,
   defaultBody,
-  editorRef,
   noteId,
   onBodyChange,
-  onStyleStateChange,
-  styleState,
 }: NoteEditorBodyProps) {
+  console.log("NoteEditorBody render")
+  const insets = useSafeAreaInsets()
+  const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
+
   const markdownStyle: MarkdownTextInputStyle = useMemo(
     () => ({
       strong: { color: "#f8fafc" },
@@ -51,16 +47,15 @@ export function NoteEditorBody({
           defaultValue={defaultBody}
           markdownStyle={markdownStyle}
           onChangeMarkdown={onBodyChange}
-          onChangeState={onStyleStateChange}
           placeholder="Start writing..."
           placeholderTextColor="#71717a"
           selectionColor="#94a3b8"
           style={styles.editor}
         />
         <MarkdownToolbar
-          bottomInset={bottomInset}
+          bottomInset={insets.bottom}
           editorRef={editorRef}
-          styleState={styleState}
+          styleState={null}
         />
       </View>
     </KeyboardAvoidingView>

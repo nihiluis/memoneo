@@ -84,6 +84,7 @@ function DrawerNoteTreeListComponent({
 
   const selectNote = useCallback(
     (noteId: string) => {
+      console.log("selectNote", noteId)
       setSelectedNoteId(noteId)
       closeDrawer()
       router.push("/")
@@ -160,6 +161,8 @@ function DrawerNoteTreeListComponent({
   )
 
   const isLoading = notesState.isLoading || foldersQuery.isLoading
+
+  console.log("DrawerNoteTreeList render")
 
   return (
     <View style={styles.flex}>

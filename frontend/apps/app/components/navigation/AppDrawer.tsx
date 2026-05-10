@@ -36,6 +36,8 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
   const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
   const noteOptionsSheetRef = useRef<BottomSheetModal>(null)
 
+  console.log("AppDrawer render")
+
   const notesState = useNotesState()
   const noteCacheQuery = useQuery({
     queryKey: NOTES_CACHE_QUERY_KEY,
