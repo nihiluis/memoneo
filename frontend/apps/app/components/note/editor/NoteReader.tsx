@@ -1,6 +1,6 @@
 import type { Note } from "@memoneo/shared"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, StyleSheet, View } from "react-native"
 import {
   EnrichedMarkdownTextInput,
@@ -16,11 +16,19 @@ import { createLocalNote, writeLocalNote } from "@/lib/notes/local"
 import { MarkdownToolbar } from "./MarkdownToolbar"
 import { NoteHeader } from "./NoteHeader"
 
+const AUTOSAVE_DELAY_MS = 5000
+
 type NoteReaderProps = {
   bottomInset: number
   error: Error | null
   isLoading: boolean
   note: Note | null
+}
+
+type DraftSnapshot = {
+  noteId: string
+  title: string
+  body: string
 }
 
 export function NoteReader({
@@ -34,6 +42,10 @@ export function NoteReader({
   const [styleState, setStyleState] = useState<StyleState | null>(null)
   const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const noteRef = useRef<Note | null>(null)
+  const draftRef = useRef<DraftSnapshot | null>(null)
+  const lastSavedDraftRef = useRef<DraftSnapshot | null>(null)
+  const hydratedNoteIdRef = useRef<string | null>(null)
   const queryClient = useQueryClient()
 
   const markdownStyle: MarkdownTextInputStyle = useMemo(
@@ -46,55 +58,143 @@ export function NoteReader({
     [],
   )
 
+  const clearScheduledSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+  }, [])
+
+  const saveDraft = useCallback(async () => {
+    clearScheduledSave()
+
+    const currentNote = noteRef.current
+    const draft = draftRef.current
+
+    if (!currentNote || !draft) {
+      return
+    }
+
+    const nextTitle = draft.title.trim()
+    const nextBody = draft.body.trim()
+
+    if (currentNote.id === "unsaved" && !nextTitle && !nextBody) {
+      return
+    }
+
+    const lastSavedDraft = lastSavedDraftRef.current
+    if (
+      lastSavedDraft?.noteId === draft.noteId &&
+      lastSavedDraft.title === draft.title &&
+      lastSavedDraft.body === draft.body
+    ) {
+      return
+    }
+
+    if (currentNote.id === "unsaved") {
+      lastSavedDraftRef.current = draft
+      const createdNote = await createLocalNote(nextTitle || "Untitled", draft.body)
+      const createdDraft = {
+        noteId: createdNote.id,
+        title: createdNote.title,
+        body: createdNote.body,
+      }
+      if (draftRef.current === draft && noteRef.current?.id === currentNote.id) {
+        draftRef.current = createdDraft
+        lastSavedDraftRef.current = createdDraft
+      }
+    } else {
+      await writeLocalNote(
+        {
+          ...currentNote,
+          title: nextTitle || currentNote.title || "Untitled",
+          body: draft.body,
+        },
+        draft.body
+      )
+      if (draftRef.current === draft && noteRef.current?.id === currentNote.id) {
+        lastSavedDraftRef.current = draft
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
+  }, [clearScheduledSave, queryClient])
+
   useEffect(() => {
-    setBody(note?.body ?? "")
-    setTitle(note?.title ?? "")
+    const noteId = note?.id ?? null
+    if (hydratedNoteIdRef.current === noteId) {
+      noteRef.current = note
+      return
+    }
+
+    if (hydratedNoteIdRef.current !== null) {
+      void saveDraft()
+    }
+
+    hydratedNoteIdRef.current = noteId
+    noteRef.current = note
+
+    const nextDraft = {
+      noteId: note?.id ?? "",
+      title: note?.title ?? "",
+      body: note?.body ?? "",
+    }
+
+    draftRef.current = nextDraft
+    lastSavedDraftRef.current = nextDraft
+    setBody(nextDraft.body)
+    setTitle(nextDraft.title)
     setStyleState(null)
-  }, [note])
+    clearScheduledSave()
+  }, [clearScheduledSave, note, saveDraft])
 
   useEffect(() => {
     if (!note) {
       return
     }
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
+    const nextDraft = {
+      noteId: note.id,
+      title,
+      body,
+    }
+    draftRef.current = nextDraft
+
+    const lastSavedDraft = lastSavedDraftRef.current
+    if (
+      lastSavedDraft?.noteId === nextDraft.noteId &&
+      lastSavedDraft.title === nextDraft.title &&
+      lastSavedDraft.body === nextDraft.body
+    ) {
+      return
     }
 
-    saveTimeoutRef.current = setTimeout(async () => {
-      const nextTitle = title.trim()
-      const nextBody = body.trim()
-
-      if (note.id === "unsaved" && !nextTitle && !nextBody) {
-        return
-      }
-
-      if (note.id === "unsaved") {
-        await createLocalNote(nextTitle || "Untitled", body)
-      } else {
-        await writeLocalNote(
-          {
-            ...note,
-            title: nextTitle || note.title || "Untitled",
-            body,
-          },
-          body
-        )
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
-    }, 800)
+    clearScheduledSave()
+    saveTimeoutRef.current = setTimeout(() => {
+      void saveDraft()
+    }, AUTOSAVE_DELAY_MS)
 
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
+      clearScheduledSave()
     }
-  }, [body, note, queryClient, title])
+  }, [body, clearScheduledSave, note, saveDraft, title])
+
+  useEffect(() => {
+    return () => {
+      void saveDraft()
+    }
+  }, [saveDraft])
 
   return (
     <View className="flex-1">
-      <NoteHeader note={note} title={title} onChangeTitle={setTitle} />
+      <NoteHeader
+        note={note}
+        title={title}
+        onBlurTitle={() => {
+          void saveDraft()
+        }}
+        onChangeTitle={setTitle}
+      />
 
       {isLoading && (
         <View className="flex-1 items-center justify-center">
@@ -117,10 +217,13 @@ export function NoteReader({
           keyboardVerticalOffset={0}>
           <View className="flex-1">
             <EnrichedMarkdownTextInput
-              key={`${note.id}:${note.updated_at ?? note.version}`}
+              key={note.id}
               ref={editorRef}
-              defaultValue={body}
+              defaultValue={note.body}
               markdownStyle={markdownStyle}
+              onBlur={() => {
+                void saveDraft()
+              }}
               onChangeMarkdown={setBody}
               onChangeState={setStyleState}
               placeholder="Start writing..."

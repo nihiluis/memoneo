@@ -8,9 +8,15 @@ type NoteHeaderProps = {
   note: Note | null
   title: string
   onChangeTitle: (title: string) => void
+  onBlurTitle?: () => void
 }
 
-export function NoteHeader({ note, title, onChangeTitle }: NoteHeaderProps) {
+export function NoteHeader({
+  note,
+  title,
+  onChangeTitle,
+  onBlurTitle,
+}: NoteHeaderProps) {
   const { openDrawer } = useAppDrawer()
 
   return (
@@ -24,6 +30,7 @@ export function NoteHeader({ note, title, onChangeTitle }: NoteHeaderProps) {
       <TextInput
         className="flex-1 p-0 text-2xl font-semibold text-foreground"
         editable={!!note}
+        onBlur={onBlurTitle}
         onChangeText={onChangeTitle}
         placeholder="Untitled"
         placeholderTextColor="#71717a"
