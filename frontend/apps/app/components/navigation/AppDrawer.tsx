@@ -7,7 +7,7 @@ import {
 import type { Note } from "@memoneo/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "expo-router"
-import { useAtom, useAtomValue } from "jotai"
+import { useAtom } from "jotai"
 import type React from "react"
 import {
   createContext,
@@ -21,7 +21,6 @@ import {
 import { Alert, Dimensions, StyleSheet } from "react-native"
 import { Drawer } from "react-native-drawer-layout"
 
-import { authAtom, tokenAtom } from "@/lib/auth/state"
 import { loadNoteCache } from "@/lib/notes/cache"
 import {
   createLocalFolder,
@@ -35,7 +34,6 @@ import {
   useNoteFoldersQuery,
   useNotesQuery,
 } from "@/lib/notes/query"
-import { downloadRemoteNotes, syncNotes, uploadLocalNotes } from "@/lib/notes/sync"
 import { selectedFolderIdAtom, selectedNoteIdAtom } from "@/lib/notes/state"
 
 import { DrawerContent } from "./DrawerContent"
@@ -71,15 +69,12 @@ export function useAppDrawer() {
 
 export function AppDrawer({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const auth = useAtomValue(authAtom)
-  const token = useAtomValue(tokenAtom)
   const queryClient = useQueryClient()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optionsNote, setOptionsNote] = useState<Note | null>(null)
   const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
   const [selectedFolderId, setSelectedFolderId] = useAtom(selectedFolderIdAtom)
   const noteOptionsSheetRef = useRef<BottomSheetModal>(null)
-  const syncInProgressRef = useRef(false)
 
   const notesQuery = useNotesQuery()
   const foldersQuery = useNoteFoldersQuery()
@@ -134,65 +129,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     closeDrawer()
     router.push("/settings")
   }, [closeDrawer, router])
-
-  const syncMutation = useMutation({
-    mutationFn: async (action: "download" | "upload" | "sync") => {
-      if (!auth.isAuthenticated || !token) {
-        throw new Error("Sign in from Settings before syncing notes.")
-      }
-
-      const syncAuth = { token, userId: auth.user.id }
-      if (action === "download") {
-        return downloadRemoteNotes(syncAuth)
-      }
-      if (action === "upload") {
-        return uploadLocalNotes(syncAuth)
-      }
-      return syncNotes(syncAuth)
-    },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: NOTES_FOLDERS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: NOTES_CACHE_QUERY_KEY }),
-      ])
-      await Promise.all([
-        queryClient.refetchQueries({
-          queryKey: NOTES_LOCAL_QUERY_KEY,
-          type: "active",
-        }),
-        queryClient.refetchQueries({
-          queryKey: NOTES_FOLDERS_QUERY_KEY,
-          type: "active",
-        }),
-        queryClient.refetchQueries({
-          queryKey: NOTES_CACHE_QUERY_KEY,
-          type: "active",
-        }),
-      ])
-    },
-    onError: error => {
-      Alert.alert(
-        "Sync failed",
-        error instanceof Error ? error.message : String(error)
-      )
-    },
-    onSettled: () => {
-      syncInProgressRef.current = false
-    },
-  })
-
-  const runSyncAction = useCallback(
-    (action: "download" | "upload" | "sync") => {
-      if (syncInProgressRef.current || syncMutation.isPending) {
-        return
-      }
-
-      syncInProgressRef.current = true
-      syncMutation.mutate(action)
-    },
-    [syncMutation]
-  )
 
   const selectNote = useCallback(
     (noteId: string) => {
@@ -399,12 +335,10 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
             isCreatingFolder={createFolderMutation.isPending}
             isCreatingNote={createNoteMutation.isPending}
             isLoading={notesQuery.isLoading || foldersQuery.isLoading}
-            isSyncing={syncMutation.isPending || syncInProgressRef.current}
             notesCount={notes.length}
             onCreateFolder={() => createFolderMutation.mutate(selectedFolderId)}
             onCreateNote={() => createNoteMutation.mutate(selectedFolderId)}
             onOpenSettings={openSettings}
-            onSync={runSyncAction}
             renderTreeRow={renderTreeRow}
             rows={visibleRows}
             selectedFolderId={selectedFolderId}
