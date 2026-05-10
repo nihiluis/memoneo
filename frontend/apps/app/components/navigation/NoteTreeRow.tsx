@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Folder,
 } from "lucide-react-native"
+import { memo } from "react"
 import { Pressable, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
@@ -22,7 +23,7 @@ type NoteTreeRowProps = {
   selectedNoteId: string
 }
 
-export function NoteTreeRow({
+function NoteTreeRowComponent({
   expanded,
   item,
   onOpenNoteOptions,
@@ -94,3 +95,44 @@ export function NoteTreeRow({
 function getTreePadding(depth: number) {
   return 8 + Math.min(depth, 8) * 16
 }
+
+export const NoteTreeRow = memo(
+  NoteTreeRowComponent,
+  (prevProps, nextProps) => {
+    if (prevProps.item.kind !== nextProps.item.kind) {
+      return false
+    }
+
+    if (
+      prevProps.expanded !== nextProps.expanded ||
+      prevProps.item.id !== nextProps.item.id ||
+      prevProps.item.depth !== nextProps.item.depth ||
+      prevProps.selectedFolderId !== nextProps.selectedFolderId ||
+      prevProps.selectedNoteId !== nextProps.selectedNoteId ||
+      prevProps.onOpenNoteOptions !== nextProps.onOpenNoteOptions ||
+      prevProps.onSelectFolder !== nextProps.onSelectFolder ||
+      prevProps.onSelectNote !== nextProps.onSelectNote ||
+      prevProps.onToggleFolder !== nextProps.onToggleFolder
+    ) {
+      return false
+    }
+
+    if (prevProps.item.kind === "folder" && nextProps.item.kind === "folder") {
+      return (
+        prevProps.item.folder.id === nextProps.item.folder.id &&
+        prevProps.item.folder.name === nextProps.item.folder.name
+      )
+    }
+
+    if (prevProps.item.kind === "note" && nextProps.item.kind === "note") {
+      return (
+        prevProps.item.note.id === nextProps.item.note.id &&
+        prevProps.item.note.title === nextProps.item.note.title &&
+        prevProps.item.note.file?.title === nextProps.item.note.file?.title &&
+        prevProps.item.note.file?.path === nextProps.item.note.file?.path
+      )
+    }
+
+    return false
+  }
+)

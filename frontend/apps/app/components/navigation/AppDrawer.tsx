@@ -6,117 +6,43 @@ import {
 } from "@gorhom/bottom-sheet"
 import type { Note } from "@memoneo/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "expo-router"
 import { useAtom } from "jotai"
 import type React from "react"
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
+import { useCallback, useRef, useState } from "react"
 import { Alert, Dimensions, StyleSheet } from "react-native"
 import { Drawer } from "react-native-drawer-layout"
 
 import { loadNoteCache } from "@/lib/notes/cache"
+import { deleteLocalNote } from "@/lib/notes/local"
+import { NOTES_CACHE_QUERY_KEY, NOTES_LOCAL_QUERY_KEY } from "@/lib/notes/query"
 import {
-  createLocalFolder,
-  createLocalNote,
-  deleteLocalNote,
-} from "@/lib/notes/local"
-import {
-  NOTES_CACHE_QUERY_KEY,
-  NOTES_FOLDERS_QUERY_KEY,
-  NOTES_LOCAL_QUERY_KEY,
-  upsertNoteInLocalQueryCache,
-  useNoteFoldersQuery,
-  useNotesQuery,
-} from "@/lib/notes/query"
-import { selectedFolderIdAtom, selectedNoteIdAtom } from "@/lib/notes/state"
+  selectedNoteIdAtom,
+  useNotesState,
+} from "@/lib/notes/state"
 
+import { AppDrawerContext } from "./appDrawerContext"
 import { DrawerContent } from "./DrawerContent"
 import { getNoteFileName, NoteOptionsSheet } from "./NoteOptionsSheet"
-import { NoteTreeRow } from "./NoteTreeRow"
-import {
-  buildNoteTree,
-  flattenVisibleTree,
-  getFolderPathFromId,
-  getNoteFolderId,
-  getSelectedFolderIds,
-  setsAreEqual,
-  type TreeRow,
-} from "./noteTree"
+
+export { useAppDrawer } from "./appDrawerContext"
 
 const WINDOW_WIDTH = Dimensions.get("window").width
 const DRAWER_WIDTH = Math.min(340, WINDOW_WIDTH * 0.86)
 
-type AppDrawerContextValue = {
-  closeDrawer: () => void
-  openDrawer: () => void
-}
-
-const AppDrawerContext = createContext<AppDrawerContextValue | null>(null)
-
-export function useAppDrawer() {
-  const context = useContext(AppDrawerContext)
-  if (!context) {
-    throw new Error("useAppDrawer must be used inside AppDrawer")
-  }
-  return context
-}
-
 export function AppDrawer({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const queryClient = useQueryClient()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optionsNote, setOptionsNote] = useState<Note | null>(null)
   const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
-  const [selectedFolderId, setSelectedFolderId] = useAtom(selectedFolderIdAtom)
   const noteOptionsSheetRef = useRef<BottomSheetModal>(null)
 
-  const notesQuery = useNotesQuery()
-  const foldersQuery = useNoteFoldersQuery()
+  const notesState = useNotesState()
   const noteCacheQuery = useQuery({
     queryKey: NOTES_CACHE_QUERY_KEY,
     queryFn: loadNoteCache,
   })
 
-  const notes = useMemo(() => notesQuery.data ?? [], [notesQuery.data])
-  const folderPaths = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data])
-  const noteTree = useMemo(
-    () => buildNoteTree(notes, folderPaths),
-    [folderPaths, notes]
-  )
-  const selectedFolderIds = useMemo(
-    () => getSelectedFolderIds(notes, selectedNoteId),
-    [notes, selectedNoteId]
-  )
-  const selectedFolderIdSet = useMemo(
-    () => new Set(selectedFolderIds),
-    [selectedFolderIds]
-  )
-  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(
-    () => new Set()
-  )
-  const visibleRows = useMemo(
-    () => flattenVisibleTree(noteTree, expandedFolderIds),
-    [noteTree, expandedFolderIds]
-  )
-
-  useEffect(() => {
-    if (selectedFolderIds.length === 0) {
-      return
-    }
-
-    setExpandedFolderIds(current => {
-      const next = new Set(current)
-      selectedFolderIds.forEach(folderId => next.add(folderId))
-      return setsAreEqual(current, next) ? current : next
-    })
-  }, [selectedFolderIds])
+  const notes = notesState.notes
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false)
@@ -125,86 +51,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
   const openDrawer = useCallback(() => {
     setDrawerOpen(true)
   }, [])
-
-  const openSettings = useCallback(() => {
-    closeDrawer()
-    router.push("/settings")
-  }, [closeDrawer, router])
-
-  const selectNote = useCallback(
-    (noteId: string) => {
-      setSelectedNoteId(noteId)
-      closeDrawer()
-      router.push("/")
-    },
-    [closeDrawer, router, setSelectedNoteId]
-  )
-
-  const selectFolder = useCallback(
-    (folderId: string) => {
-      setSelectedFolderId(folderId)
-      setExpandedFolderIds(current => {
-        if (current.has(folderId)) {
-          return current
-        }
-        const next = new Set(current)
-        next.add(folderId)
-        return next
-      })
-    },
-    [setSelectedFolderId]
-  )
-
-  const createNoteMutation = useMutation({
-    mutationFn: async (folderId: string) =>
-      createLocalNote("Untitled", "", getFolderPathFromId(folderId)),
-    onSuccess: async createdNote => {
-      upsertNoteInLocalQueryCache(queryClient, createdNote)
-      setSelectedNoteId(createdNote.id)
-      setSelectedFolderId(getNoteFolderId(createdNote))
-      await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
-      closeDrawer()
-      router.push("/")
-    },
-    onError: error => {
-      Alert.alert(
-        "Create note failed",
-        error instanceof Error ? error.message : String(error)
-      )
-    },
-  })
-
-  const createFolderMutation = useMutation({
-    mutationFn: async (folderId: string) =>
-      createLocalFolder(getFolderPathFromId(folderId)),
-    onSuccess: async folderId => {
-      queryClient.setQueryData<string[]>(NOTES_FOLDERS_QUERY_KEY, current =>
-        [...new Set([...(current ?? []), folderId])].sort((a, b) =>
-          a.localeCompare(b)
-        )
-      )
-      await queryClient.invalidateQueries({ queryKey: NOTES_FOLDERS_QUERY_KEY })
-      setSelectedFolderId(folderId)
-      setExpandedFolderIds(current => {
-        const next = new Set(current)
-        const segments = folderId.split("/").filter(Boolean)
-        let currentFolderId = ""
-        segments.forEach(segment => {
-          currentFolderId = currentFolderId
-            ? `${currentFolderId}/${segment}`
-            : segment
-          next.add(currentFolderId)
-        })
-        return setsAreEqual(current, next) ? current : next
-      })
-    },
-    onError: error => {
-      Alert.alert(
-        "Create folder failed",
-        error instanceof Error ? error.message : String(error)
-      )
-    },
-  })
 
   const openNoteOptions = useCallback((note: Note) => {
     setOptionsNote(note)
@@ -219,6 +65,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     mutationFn: deleteLocalNote,
     onSuccess: async (_result, deletedNote) => {
       closeNoteOptions()
+      notesState.removeNote(deletedNote.id)
       await queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY })
 
       if (selectedNoteId !== deletedNote.id) {
@@ -254,50 +101,6 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     [deleteNoteMutation]
   )
 
-  const toggleFolder = useCallback(
-    (folderId: string) => {
-      setExpandedFolderIds(current => {
-        const next = new Set(current)
-        if (next.has(folderId)) {
-          if (selectedFolderIdSet.has(folderId)) {
-            return current
-          }
-          next.delete(folderId)
-        } else {
-          next.add(folderId)
-        }
-        return next
-      })
-    },
-    [selectedFolderIdSet]
-  )
-
-  const renderTreeRow = useCallback(
-    ({ item }: { item: TreeRow }) => (
-      <NoteTreeRow
-        expanded={
-          item.kind === "folder" && expandedFolderIds.has(item.folder.id)
-        }
-        item={item}
-        onOpenNoteOptions={openNoteOptions}
-        onSelectFolder={selectFolder}
-        onSelectNote={selectNote}
-        onToggleFolder={toggleFolder}
-        selectedFolderId={selectedFolderId}
-        selectedNoteId={selectedNoteId}
-      />
-    ),
-    [
-      expandedFolderIds,
-      openNoteOptions,
-      selectFolder,
-      selectNote,
-      selectedFolderId,
-      selectedNoteId,
-      toggleFolder,
-    ]
-  )
-
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -315,7 +118,8 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     : undefined
 
   return (
-    <AppDrawerContext.Provider value={{ closeDrawer, openDrawer }}>
+    <AppDrawerContext.Provider
+      value={{ closeDrawer, drawerOpen, openDrawer }}>
       <Drawer
         configureGestureHandler={gesture =>
           gesture.activeOffsetX([-10, 10]).failOffsetY([-12, 12])
@@ -328,20 +132,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         open={drawerOpen}
         overlayStyle={styles.drawerOverlay}
         renderDrawerContent={() => (
-          <DrawerContent
-            expandedFolderIds={expandedFolderIds}
-            isCreatingFolder={createFolderMutation.isPending}
-            isCreatingNote={createNoteMutation.isPending}
-            isLoading={notesQuery.isLoading || foldersQuery.isLoading}
-            notesCount={notes.length}
-            onCreateFolder={() => createFolderMutation.mutate(selectedFolderId)}
-            onCreateNote={() => createNoteMutation.mutate(selectedFolderId)}
-            onOpenSettings={openSettings}
-            renderTreeRow={renderTreeRow}
-            rows={visibleRows}
-            selectedFolderId={selectedFolderId}
-            selectedNoteId={selectedNoteId}
-          />
+          <DrawerContent onOpenNoteOptions={openNoteOptions} />
         )}
         swipeEdgeWidth={WINDOW_WIDTH}
         swipeEnabled>

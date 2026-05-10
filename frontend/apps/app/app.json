@@ -54,7 +54,8 @@
       "react-native-enriched-markdown"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "reactCompiler": true
     }
   }
 }
