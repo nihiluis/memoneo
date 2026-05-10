@@ -1,6 +1,6 @@
+import { parseMarkdownNoteFile } from "@memoneo/shared"
 import * as fs from "fs/promises"
 import * as path from "path"
-import markdownParser from "./markdownParser.js"
 import * as crypto from "crypto"
 
 export interface MarkdownFileMetadata {
@@ -42,7 +42,7 @@ export async function getAllMarkdownFiles(
         const fileContentBuffer = await fs.readFile(filePath)
         const fileContent = fileContentBuffer.toString("utf-8")
 
-        const mdContent = markdownParser(fileContent)
+        const mdContent = parseMarkdownNoteFile(fileContent)
 
         const info: MarkdownFileInfo = {
           fileName: file.slice(0, file.length - ".md".length),

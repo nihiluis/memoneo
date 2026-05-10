@@ -1,25 +1,16 @@
-import { createApiClient, Note } from "@memoneo/shared"
+import { createUnsavedNote, Note } from "@memoneo/shared"
 import { useQuery } from "@tanstack/react-query"
-import { useAtomValue } from "jotai"
 
-import { tokenAtom } from "@/lib/auth/state"
-import { getApiUrl } from "@/lib/settings/urls"
+import { listLocalNotes } from "./local"
 
 export const LAST_OPENED_NOTE_KEY = "notes.lastOpenedNoteId"
 
 export function useNotesQuery() {
-  const token = useAtomValue(tokenAtom)
-
   return useQuery({
-    queryKey: ["notes", token],
-    enabled: !!token,
+    queryKey: ["notes", "local"],
     queryFn: async () => {
-      const client = createApiClient(token, getApiUrl(""))
-      const { data, error } = await client.getNotes()
-      if (error) {
-        throw error
-      }
-      return sortNotes(data ?? [])
+      const notes = await listLocalNotes()
+      return notes.length > 0 ? sortNotes(notes) : [createUnsavedNote()]
     },
   })
 }

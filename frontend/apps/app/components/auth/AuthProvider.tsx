@@ -2,28 +2,21 @@ import { useAtom } from "jotai"
 import { authAtom, getStoredToken, tokenAtom } from "@/lib/auth/state"
 import { useEffect, useState } from "react"
 import { apiCheckAuth } from "@/lib/auth/api"
-import { useRouter } from "expo-router"
 import { useMutation } from "@tanstack/react-query"
-import enckey from "@/modules/enckey"
 
 export default function AuthProvider({
   children,
 }: {
   children?: React.ReactNode
 }) {
-  const router = useRouter()
   const [auth, setAuth] = useAtom(authAtom)
   const [token, setToken] = useAtom(tokenAtom)
   const [tokenInitialized, setTokenInitialized] = useState(false)
-  const [authInitialized, setAuthInitialized] = useState(false)
 
   useEffect(() => {
     const loadToken = async () => {
       if (token) {
         // Token is already set from another screen, so we can skip the loading.
-        if (auth.isAuthenticated) {
-          setAuthInitialized(true)
-        }
         return
       }
 
@@ -56,11 +49,9 @@ export default function AuthProvider({
       })
 
       setToken(data.token)
-      setAuthInitialized(true)
     },
     onError: () => {
       setToken("")
-      setAuthInitialized(false)
     },
   })
 
@@ -87,21 +78,10 @@ export default function AuthProvider({
           error: "",
           enckey: null,
         })
-        setAuthInitialized(true)
       }
     }
     checkAuth()
   }, [token, tokenInitialized])
-
-  useEffect(() => {
-    if (authInitialized && !auth.isAuthenticated) {
-      console.log("redirecting to login")
-      if (token) {
-        setToken("")
-      }
-      router.replace("/auth/login")
-    }
-  }, [authInitialized, auth.isAuthenticated])
 
   return <>{children}</>
 }

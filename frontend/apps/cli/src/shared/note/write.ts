@@ -1,7 +1,7 @@
+import { serializeMarkdownNote } from "@memoneo/shared"
 import * as fs from "fs/promises"
 import * as path from "path"
 import { Note, NoteFileData } from "./index.js"
-import { dedent } from "../../lib/dedent.js"
 import { MarkdownFileInfo } from "../../lib/files.js"
 import { MemoneoConfig } from "../config.js"
 
@@ -20,16 +20,7 @@ export async function writeNoteToFile(
   config: MemoneoConfig,
   fileInfo: NoteFileData
 ) {
-  // Create metadata section with dedent to keep it clean
-  const metadata = dedent`---
-  id: ${note.id}
-  title: ${note.title}
-  date: ${note.date}
-  version: ${note.version}
-  ---`
-
-  // Combine metadata with body, preserving body's whitespace
-  const fileText = `${metadata}\n${decryptedBody.trim()}`
+  const fileText = serializeMarkdownNote(note, decryptedBody)
 
   const targetFilePath = path.join(
     config.baseDirectory,
@@ -48,14 +39,15 @@ export async function removeIdFromMetadataInFile(
   mdFile: MarkdownFileInfo,
   config: MemoneoConfig
 ) {
-  const metadata = dedent`---
-  title: ${mdFile.metadata.title}
-  date: ${mdFile.metadata.date}
-  version: ${mdFile.metadata.version}
-  ---`
-
-  // Combine metadata with body, preserving body's whitespace
-  const fileText = `${metadata}\n${mdFile.text}`
+  const fileText = serializeMarkdownNote(
+    {
+      id: "",
+      title: mdFile.metadata.title ?? mdFile.fileName,
+      date: mdFile.metadata.date ?? mdFile.modifiedTime.toISOString(),
+      version: mdFile.metadata.version ?? 0,
+    } as Note,
+    mdFile.text
+  )
 
   const targetFilePath = path.join(
     config.baseDirectory,

@@ -1,5 +1,4 @@
 import AudioPlayer from "@/components/audio/AudioPlayer"
-import AuthScreen from "@/components/auth/AuthScreen"
 import { Button } from "@/components/reusables/Button"
 import { MText } from "@/components/reusables/MText"
 import MView from "@/components/reusables/MView"
@@ -16,13 +15,9 @@ import { Alert } from "react-native"
 import { isAvailableAsync, shareAsync } from "expo-sharing"
 import { pollTranscription, queueTranscription } from "@/lib/transcribe"
 import { useMutation } from "@tanstack/react-query"
-import { uploadTranscript } from "@/lib/upload/api"
-import { authAtom, tokenAtom } from "@/lib/auth/state"
-import { useAtomValue } from "jotai"
+import { createLocalNote } from "@/lib/notes/local"
 
 export default function RecordScreen() {
-  const token = useAtomValue(tokenAtom)
-  const auth = useAtomValue(authAtom)
   const { recordId } = useLocalSearchParams()
   const [metadata, setMetadata] = useState<RecordFileMetadata | null>(null)
   const [recordFileData, setRecordFileData] =
@@ -74,18 +69,11 @@ export default function RecordScreen() {
     },
   })
 
-  const uploadMutation = useMutation({
+  const saveNoteMutation = useMutation({
     mutationFn: async () => {
       if (!recordFileData) return
-      if (!auth.enckey) return
       if (!hasTranscript) return
-      return await uploadTranscript(
-        token,
-        auth.enckey.salt,
-        auth.user.id,
-        recordFileData,
-        metadata.transcribe.text
-      )
+      return createLocalNote(recordFileData.title, metadata.transcribe.text)
     },
   })
 
@@ -142,7 +130,7 @@ export default function RecordScreen() {
   }, [recordFileData, transcribeMutation])
 
   return (
-    <AuthScreen>
+    <>
       <Stack.Screen
         options={{
           headerShown: false,
@@ -185,8 +173,8 @@ export default function RecordScreen() {
                 <Button
                   variant="outline"
                   size="lg"
-                  onPress={() => uploadMutation.mutate()}>
-                  <MText>Upload</MText>
+                  onPress={() => saveNoteMutation.mutate()}>
+                  <MText>Save note</MText>
                 </Button>
               )}
               <Button variant="danger" size="lg">
@@ -196,6 +184,6 @@ export default function RecordScreen() {
           </MView>
         )}
       </MRootView>
-    </AuthScreen>
+    </>
   )
 }

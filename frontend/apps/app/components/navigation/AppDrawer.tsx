@@ -1,15 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Note } from "@memoneo/shared"
 import { FlashList } from "@shopify/flash-list"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "expo-router"
-import { useAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import {
   ChevronDown,
   ChevronRight,
+  Download,
   Folder,
   FolderPlus,
   Plus,
+  RefreshCw,
   Settings,
+  Upload,
 } from "lucide-react-native"
 import type React from "react"
 import {
@@ -20,12 +24,14 @@ import {
   useMemo,
   useState,
 } from "react"
-import { Dimensions, Pressable, StyleSheet, View } from "react-native"
+import { Alert, Dimensions, Pressable, StyleSheet, View } from "react-native"
 import { Drawer } from "react-native-drawer-layout"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 import { MText } from "@/components/reusables/MText"
+import { authAtom, tokenAtom } from "@/lib/auth/state"
 import { LAST_OPENED_NOTE_KEY, useNotesQuery } from "@/lib/notes/query"
+import { downloadRemoteNotes, syncNotes, uploadLocalNotes } from "@/lib/notes/sync"
 import { selectedNoteIdAtom } from "@/lib/notes/state"
 
 const WINDOW_WIDTH = Dimensions.get("window").width
@@ -69,6 +75,9 @@ export function useAppDrawer() {
 
 export function AppDrawer({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const auth = useAtomValue(authAtom)
+  const token = useAtomValue(tokenAtom)
+  const queryClient = useQueryClient()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
   const notesQuery = useNotesQuery()
@@ -126,6 +135,41 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     closeDrawer()
     router.push("/settings")
   }, [closeDrawer, router])
+
+  const syncMutation = useMutation({
+    mutationFn: async (action: "download" | "upload" | "sync") => {
+      if (!auth.isAuthenticated || !token) {
+        throw new Error("Sign in from Settings before syncing notes.")
+      }
+
+      const syncAuth = { token, userId: auth.user.id }
+      if (action === "download") {
+        return downloadRemoteNotes(syncAuth)
+      }
+      if (action === "upload") {
+        return uploadLocalNotes(syncAuth)
+      }
+      return syncNotes(syncAuth)
+    },
+    onSuccess: async result => {
+      await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
+      Alert.alert(
+        "Notes synced",
+        [
+          `Downloaded: ${result.downloaded}`,
+          `Uploaded: ${result.uploaded}`,
+          `Updated local: ${result.updatedLocal}`,
+          `Updated remote: ${result.updatedRemote}`,
+        ].join("\n")
+      )
+    },
+    onError: error => {
+      Alert.alert(
+        "Sync failed",
+        error instanceof Error ? error.message : String(error)
+      )
+    },
+  })
 
   const selectNote = useCallback(
     async (noteId: string) => {
@@ -207,6 +251,23 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
                   <DrawerAction
                     icon={<FolderPlus size={32} color="#a1a1aa" />}
                     label="New folder"
+                  />
+                  <DrawerAction
+                    icon={<Download size={32} color="#a1a1aa" />}
+                    label="Download"
+                    onPress={() => syncMutation.mutate("download")}
+                  />
+                </View>
+                <View style={styles.drawerActions}>
+                  <DrawerAction
+                    icon={<Upload size={32} color="#a1a1aa" />}
+                    label="Upload"
+                    onPress={() => syncMutation.mutate("upload")}
+                  />
+                  <DrawerAction
+                    icon={<RefreshCw size={32} color="#a1a1aa" />}
+                    label="Sync"
+                    onPress={() => syncMutation.mutate("sync")}
                   />
                   <DrawerAction
                     icon={<Settings size={32} color="#a1a1aa" />}

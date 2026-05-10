@@ -1,4 +1,5 @@
 import type { Note } from "@memoneo/shared"
+import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, StyleSheet, View } from "react-native"
 import {
@@ -10,9 +11,8 @@ import {
 import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 
 import { MText } from "@/components/reusables/MText"
-import enckey from "@/modules/enckey"
+import { createLocalNote, writeLocalNote } from "@/lib/notes/local"
 
-import { getNoteTitle } from "./getNoteTitle"
 import { MarkdownToolbar } from "./MarkdownToolbar"
 import { NoteHeader } from "./NoteHeader"
 
@@ -31,9 +31,10 @@ export function NoteReader({
 }: NoteReaderProps) {
   const [body, setBody] = useState("")
   const [title, setTitle] = useState("")
-  const [isDecryptingBody, setIsDecryptingBody] = useState(false)
   const [styleState, setStyleState] = useState<StyleState | null>(null)
   const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const queryClient = useQueryClient()
 
   const markdownStyle: MarkdownTextInputStyle = useMemo(
     () => ({
@@ -46,38 +47,50 @@ export function NoteReader({
   )
 
   useEffect(() => {
-    let cancelled = false
-    setBody("")
-    setTitle(getNoteTitle(note))
+    setBody(note?.body ?? "")
+    setTitle(note?.title ?? "")
     setStyleState(null)
-    setIsDecryptingBody(!!note)
+  }, [note])
 
-    async function decryptBody() {
-      if (!note) {
+  useEffect(() => {
+    if (!note) {
+      return
+    }
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      const nextTitle = title.trim()
+      const nextBody = body.trim()
+
+      if (note.id === "unsaved" && !nextTitle && !nextBody) {
         return
       }
 
-      try {
-        const decrypted = await enckey.decryptText(note.body, note.body_iv)
-        if (!cancelled) {
-          setBody(decrypted)
-          setIsDecryptingBody(false)
-        }
-      } catch (decryptError) {
-        console.error("Failed to decrypt note body", decryptError)
-        if (!cancelled) {
-          setBody(note.decryptedBody ?? note.body)
-          setIsDecryptingBody(false)
-        }
+      if (note.id === "unsaved") {
+        await createLocalNote(nextTitle || "Untitled", body)
+      } else {
+        await writeLocalNote(
+          {
+            ...note,
+            title: nextTitle || note.title || "Untitled",
+            body,
+          },
+          body
+        )
       }
-    }
 
-    decryptBody()
+      await queryClient.invalidateQueries({ queryKey: ["notes", "local"] })
+    }, 800)
 
     return () => {
-      cancelled = true
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
     }
-  }, [note])
+  }, [body, note, queryClient, title])
 
   return (
     <View className="flex-1">
@@ -97,40 +110,24 @@ export function NoteReader({
         </View>
       )}
 
-      {!isLoading && !error && !note && (
-        <View className="flex-1 justify-center px-6">
-          <MText className="text-center text-muted-foreground">
-            No note selected.
-          </MText>
-        </View>
-      )}
-
       {!isLoading && !error && note && (
         <KeyboardAvoidingView
           behavior="padding"
           className="flex-1"
           keyboardVerticalOffset={0}>
           <View className="flex-1">
-            {isDecryptingBody ? (
-              <View className="flex-1 px-4 py-4">
-                <MText className="text-lg leading-7 text-muted-foreground">
-                  Decrypting note...
-                </MText>
-              </View>
-            ) : (
-              <EnrichedMarkdownTextInput
-                key={`${note.id}:${note.updated_at ?? note.version}`}
-                ref={editorRef}
-                defaultValue={body}
-                markdownStyle={markdownStyle}
-                onChangeMarkdown={setBody}
-                onChangeState={setStyleState}
-                placeholder="Start writing..."
-                placeholderTextColor="#71717a"
-                selectionColor="#94a3b8"
-                style={styles.editor}
-              />
-            )}
+            <EnrichedMarkdownTextInput
+              key={`${note.id}:${note.updated_at ?? note.version}`}
+              ref={editorRef}
+              defaultValue={body}
+              markdownStyle={markdownStyle}
+              onChangeMarkdown={setBody}
+              onChangeState={setStyleState}
+              placeholder="Start writing..."
+              placeholderTextColor="#71717a"
+              selectionColor="#94a3b8"
+              style={styles.editor}
+            />
             <MarkdownToolbar
               bottomInset={bottomInset}
               editorRef={editorRef}
