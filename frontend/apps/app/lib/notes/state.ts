@@ -11,20 +11,21 @@ export const selectedFolderIdAtom = atom<string>("")
 /** Expanded folders in the app drawer note tree (shared with drawer actions). */
 export const drawerExpandedFolderIdsAtom = atom(new Set<string>())
 
-const selectedNoteValueAtom = atom<Note | null>(null)
-const notesValueAtom = atom<Note[]>([])
+/** In-memory note list mirrored from the notes query (see `useNotesState`). */
+export const notesAtom = atom<Note[]>([])
 
-export const selectedNoteAtom = atom(
-  get => get(selectedNoteValueAtom),
-  (_get, set, note: Note | null) => {
-    set(selectedNoteValueAtom, note)
-    set(selectedFolderIdAtom, note ? getNoteParentFolderId(note) : "")
+export const selectedNoteAtom = atom(get => {
+  const id = get(selectedNoteIdAtom)
+  if (!id) {
+    return null
   }
-)
+  const notes = get(notesAtom)
+  return notes.find(note => note.id === id) ?? null
+})
 
 export function useNotesState() {
   const notesQuery = useNotesQuery()
-  const [notes, setNotes] = useAtom(notesValueAtom)
+  const [notes, setNotes] = useAtom(notesAtom)
 
   useEffect(() => {
     if (!notesQuery.data) {
@@ -55,6 +56,6 @@ export function useNotesState() {
   }
 }
 
-function getNoteParentFolderId(note: Note) {
+export function getNoteParentFolderId(note: Note) {
   return note.file?.path?.trim().split(/[\\/]/).filter(Boolean).join("/") ?? ""
 }

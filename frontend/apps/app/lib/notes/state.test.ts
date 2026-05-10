@@ -3,7 +3,8 @@ import { createStore } from "jotai/vanilla"
 import { describe, expect, it } from "vitest"
 
 import {
-  selectedFolderIdAtom,
+  getNoteParentFolderId,
+  notesAtom,
   selectedNoteAtom,
   selectedNoteIdAtom,
 } from "./state"
@@ -23,42 +24,55 @@ function note(id: string, path?: string): Note {
 }
 
 describe("notes selection state", () => {
-  it("defaults to no selected note and no selected folder", () => {
+  it("defaults to no selected note", () => {
     const store = createStore()
 
     expect(store.get(selectedNoteIdAtom)).toBe("")
     expect(store.get(selectedNoteAtom)).toBeNull()
-    expect(store.get(selectedFolderIdAtom)).toBe("")
   })
 
-  it("sets the selected folder to the selected note parent", () => {
+  it("derives the selected note from id and in-memory notes list", () => {
     const store = createStore()
     const selectedNote = note("a", "Work/Ideas")
 
-    store.set(selectedNoteAtom, selectedNote)
+    store.set(notesAtom, [selectedNote])
+    store.set(selectedNoteIdAtom, "a")
 
     expect(store.get(selectedNoteAtom)).toBe(selectedNote)
-    expect(store.get(selectedFolderIdAtom)).toBe("Work/Ideas")
   })
 
-  it("normalizes selected note parent paths", () => {
+  it("returns null when the id is not in the notes list", () => {
     const store = createStore()
 
-    store.set(selectedNoteAtom, note("a", " Work\\Ideas/ "))
+    store.set(notesAtom, [note("b")])
+    store.set(selectedNoteIdAtom, "a")
 
-    expect(store.get(selectedFolderIdAtom)).toBe("Work/Ideas")
-  })
-
-  it("uses an empty selected folder for top-level notes and no notes", () => {
-    const store = createStore()
-
-    store.set(selectedFolderIdAtom, "Work")
-    store.set(selectedNoteAtom, note("a"))
-    expect(store.get(selectedFolderIdAtom)).toBe("")
-
-    store.set(selectedFolderIdAtom, "Work")
-    store.set(selectedNoteAtom, null)
     expect(store.get(selectedNoteAtom)).toBeNull()
-    expect(store.get(selectedFolderIdAtom)).toBe("")
+  })
+
+  it("clears derived note when id is cleared", () => {
+    const store = createStore()
+
+    store.set(notesAtom, [note("a")])
+    store.set(selectedNoteIdAtom, "a")
+    expect(store.get(selectedNoteAtom)).not.toBeNull()
+
+    store.set(selectedNoteIdAtom, "")
+    expect(store.get(selectedNoteAtom)).toBeNull()
+  })
+})
+
+describe("getNoteParentFolderId", () => {
+  it("returns normalized parent path segments", () => {
+    expect(getNoteParentFolderId(note("a", "Work/Ideas"))).toBe("Work/Ideas")
+  })
+
+  it("normalizes slashes, backslashes, and surrounding whitespace", () => {
+    expect(getNoteParentFolderId(note("a", " Work\\Ideas/ "))).toBe("Work/Ideas")
+  })
+
+  it("returns empty string for top-level notes and missing file", () => {
+    expect(getNoteParentFolderId(note("a"))).toBe("")
+    expect(getNoteParentFolderId(note("a", ""))).toBe("")
   })
 })

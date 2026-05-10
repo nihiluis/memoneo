@@ -9,7 +9,7 @@ import {
   NOTES_CACHE_QUERY_KEY,
   NOTES_LOCAL_QUERY_KEY,
 } from "@/lib/notes/query"
-import { selectedNoteAtom, selectedNoteIdAtom } from "@/lib/notes/state"
+import { selectedFolderIdAtom, selectedNoteIdAtom } from "@/lib/notes/state"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "expo-router"
@@ -22,7 +22,7 @@ export default function SettingsScreen() {
   const auth = useAtomValue(authAtom)
   const setAuth = useSetAtom(authAtom)
   const setToken = useSetAtom(tokenAtom)
-  const setSelectedNote = useSetAtom(selectedNoteAtom)
+  const setSelectedFolderId = useSetAtom(selectedFolderIdAtom)
   const setSelectedNoteId = useSetAtom(selectedNoteIdAtom)
   const { openDrawer } = useAppDrawer()
   const router = useRouter()
@@ -48,8 +48,8 @@ export default function SettingsScreen() {
       ])
     },
     onSuccess: async () => {
-      setSelectedNote(null)
       setSelectedNoteId("")
+      setSelectedFolderId("")
       queryClient.setQueryData(NOTES_LOCAL_QUERY_KEY, [])
       queryClient.setQueryData(NOTES_CACHE_QUERY_KEY, {})
       await Promise.all([

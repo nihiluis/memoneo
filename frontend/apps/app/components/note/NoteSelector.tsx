@@ -1,24 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import type { Note } from "@memoneo/shared"
-import { useSetAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import { useEffect } from "react"
 
 import { LAST_OPENED_NOTE_KEY } from "@/lib/notes/query"
-import { selectedNoteAtom, selectedNoteIdAtom } from "@/lib/notes/state"
+import {
+  getNoteParentFolderId,
+  selectedFolderIdAtom,
+  selectedNoteIdAtom,
+  useNotesState,
+} from "@/lib/notes/state"
 
-type NoteSelectorProps = {
-  isLoading: boolean
-  notes: Note[]
-  selectedNoteId: string
-}
-
-export function NoteSelector({
-  isLoading,
-  notes,
-  selectedNoteId,
-}: NoteSelectorProps) {
-  const setSelectedNote = useSetAtom(selectedNoteAtom)
-  const setSelectedNoteId = useSetAtom(selectedNoteIdAtom)
+export function NoteSelector() {
+  const { notes, isLoading } = useNotesState()
+  const setSelectedFolderId = useSetAtom(selectedFolderIdAtom)
+  const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
 
   useEffect(() => {
     if (isLoading || selectedNoteId || notes.length === 0) {
@@ -50,20 +45,21 @@ export function NoteSelector({
     }
 
     if (!selectedNoteId) {
-      setSelectedNote(null)
+      setSelectedFolderId("")
       return
     }
 
     const selectedNote = notes.find(note => note.id === selectedNoteId) ?? null
-    setSelectedNote(selectedNote)
 
     if (!selectedNote) {
+      setSelectedFolderId("")
       void AsyncStorage.removeItem(LAST_OPENED_NOTE_KEY)
       return
     }
 
+    setSelectedFolderId(getNoteParentFolderId(selectedNote))
     void AsyncStorage.setItem(LAST_OPENED_NOTE_KEY, selectedNote.id)
-  }, [isLoading, notes, selectedNoteId, setSelectedNote])
+  }, [isLoading, notes, selectedNoteId, setSelectedFolderId])
 
   return null
 }

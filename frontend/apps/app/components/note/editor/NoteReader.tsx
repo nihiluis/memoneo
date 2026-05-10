@@ -1,6 +1,6 @@
 import type { Note } from "@memoneo/shared"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, Alert, View } from "react-native"
 import type {
@@ -14,17 +14,11 @@ import {
   NOTES_LOCAL_QUERY_KEY,
   upsertNoteInLocalQueryCache,
 } from "@/lib/notes/query"
-import { selectedNoteIdAtom } from "@/lib/notes/state"
+import { selectedNoteAtom, selectedNoteIdAtom, useNotesState } from "@/lib/notes/state"
 
 import { NoteEditorBody } from "./NoteEditorBody"
 import { NoteHeader } from "./NoteHeader"
-
-type NoteReaderProps = {
-  bottomInset: number
-  error: Error | null
-  isLoading: boolean
-  note: Note | null
-}
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 type DraftSnapshot = {
   noteId: string
@@ -37,12 +31,11 @@ type SaveVariables = {
   draft: DraftSnapshot
 }
 
-export function NoteReader({
-  bottomInset,
-  error,
-  isLoading,
-  note,
-}: NoteReaderProps) {
+export function NoteReader() {
+  const insets = useSafeAreaInsets()
+  const { error, isLoading } = useNotesState()
+  const note = useAtomValue(selectedNoteAtom)
+
   const [body, setBody] = useState("")
   const [title, setTitle] = useState("")
   const [styleState, setStyleState] = useState<StyleState | null>(null)
@@ -190,7 +183,7 @@ export function NoteReader({
 
       {!isLoading && !error && note && (
         <NoteEditorBody
-          bottomInset={bottomInset}
+          bottomInset={insets.bottom}
           defaultBody={note.body}
           editorRef={editorRef}
           noteId={note.id}
