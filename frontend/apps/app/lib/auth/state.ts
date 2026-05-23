@@ -37,9 +37,12 @@ export async function clearStoredToken() {
 export const authAtom = atom<AuthState>(initialAuthState)
 const innerTokenAtom = atom<string>("")
 export const tokenAtom = atom(
-  async get => get(innerTokenAtom),
-  async (_get, set, newToken: string) => {
-    console.log("Setting token")
+  get => get(innerTokenAtom),
+  async (get, set, newToken: string) => {
+    if (get(innerTokenAtom) === newToken) {
+      return
+    }
+
     if (newToken) {
       await SecureStore.setItemAsync(TOKEN_STORAGE_KEY, newToken)
     } else {

@@ -37,7 +37,7 @@ export default function AuthProvider({
     }
   }, [token, tokenInitialized])
 
-  const mutation = useMutation({
+  const { isPending: isAuthCheckPending, mutate: verifyToken } = useMutation({
     mutationFn: (token: string) => apiCheckAuth(token),
     onSuccess: data => {
       setAuth({
@@ -51,13 +51,25 @@ export default function AuthProvider({
       setToken(data.token)
     },
     onError: () => {
+      setAuth({
+        isLoading: false,
+        isAuthenticated: false,
+        user: { id: "", mail: "" },
+        error: "Could not verify your session.",
+        enckey: null,
+      })
       setToken("")
     },
   })
 
   useEffect(() => {
     async function checkAuth() {
-      if (!tokenInitialized || auth.isAuthenticated) {
+      if (
+        !tokenInitialized ||
+        auth.isAuthenticated ||
+        auth.isLoading ||
+        isAuthCheckPending
+      ) {
         return
       }
 
@@ -69,7 +81,7 @@ export default function AuthProvider({
           error: "",
           enckey: null,
         })
-        mutation.mutate(token)
+        verifyToken(token)
       } else {
         setAuth({
           isLoading: false,
@@ -83,10 +95,12 @@ export default function AuthProvider({
     checkAuth()
   }, [
     auth.isAuthenticated,
-    mutation,
+    auth.isLoading,
+    isAuthCheckPending,
     setAuth,
     token,
     tokenInitialized,
+    verifyToken,
   ])
 
   return <>{children}</>
