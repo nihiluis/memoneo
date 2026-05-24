@@ -2,7 +2,16 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+import groovy.json.JsonSlurper
+
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+def appPackageJson = new JsonSlurper().parse(file("$projectRoot/package.json"))
+def appVersionName = appPackageJson.version as String
+def versionParts = appVersionName.tokenize("-")[0].tokenize(".").collect { it as int }
+while (versionParts.size() < 3) {
+    versionParts.add(0)
+}
+def appVersionCode = (versionParts[0] * 10000) + (versionParts[1] * 100) + versionParts[2]
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -92,8 +101,8 @@ android {
         applicationId 'com.anonymous.memoneo'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode appVersionCode
+        versionName appVersionName
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "api@v*"
+      - "auth@v*"
+      - "cli@v*"
+      - "app@v*"
+      - "shared@v*"
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "24"
+  GO_VERSION: "1.23"
+  GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
+
+jobs:
+  release:
+    name: Build package release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve package
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          package="${tag%%@v*}"
+          version="${tag#*@v}"
+          echo "PACKAGE=$package" >> "$GITHUB_ENV"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "TAG_SAFE=${tag//@/-}" >> "$GITHUB_ENV"
+
+      - name: Create artifact directory
+        run: mkdir -p dist
+
+      - name: Set up Node
+        if: env.PACKAGE == 'api' || env.PACKAGE == 'cli' || env.PACKAGE == 'app' || env.PACKAGE == 'shared'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable Corepack
+        if: env.PACKAGE == 'api' || env.PACKAGE == 'cli' || env.PACKAGE == 'app' || env.PACKAGE == 'shared'
+        run: corepack enable
+
+      - name: Set up Go
+        if: env.PACKAGE == 'auth' || env.PACKAGE == 'shared' || env.PACKAGE == 'cli'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/auth/go.sum
+
+      - name: Set up Java
+        if: env.PACKAGE == 'app'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        if: env.PACKAGE == 'app'
+        uses: android-actions/setup-android@v3
+
+      - name: Install API dependencies
+        if: env.PACKAGE == 'api'
+        working-directory: backend/api
+        run: pnpm install --frozen-lockfile
+
+      - name: Test API
+        if: env.PACKAGE == 'api'
+        working-directory: backend/api
+        run: pnpm test
+
+      - name: Typecheck API
+        if: env.PACKAGE == 'api'
+        working-directory: backend/api
+        run: pnpm check
+
+      - name: Build API image
+        if: env.PACKAGE == 'api'
+        run: docker build --tag "memoneo-api:${TAG_SAFE}" backend/api
+
+      - name: Export API image
+        if: env.PACKAGE == 'api'
+        run: docker save "memoneo-api:${TAG_SAFE}" | gzip > "dist/memoneo-api-${TAG_SAFE}.tar.gz"
+
+      - name: Test auth service
+        if: env.PACKAGE == 'auth'
+        working-directory: backend/auth
+        run: go test ./...
+
+      - name: Build auth service
+        if: env.PACKAGE == 'auth'
+        working-directory: backend/auth
+        run: go build -o ../../dist/memoneo-auth .
+
+      - name: Build auth image
+        if: env.PACKAGE == 'auth'
+        run: docker build --file backend/auth/Dockerfile --tag "memoneo-auth:${TAG_SAFE}" backend
+
+      - name: Export auth image
+        if: env.PACKAGE == 'auth'
+        run: docker save "memoneo-auth:${TAG_SAFE}" | gzip > "dist/memoneo-auth-${TAG_SAFE}.tar.gz"
+
+      - name: Install frontend dependencies
+        if: env.PACKAGE == 'cli' || env.PACKAGE == 'app' || env.PACKAGE == 'shared'
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Test frontend
+        if: env.PACKAGE == 'cli' || env.PACKAGE == 'app' || env.PACKAGE == 'shared'
+        working-directory: frontend
+        run: pnpm test
+
+      - name: Typecheck frontend
+        if: env.PACKAGE == 'cli' || env.PACKAGE == 'app' || env.PACKAGE == 'shared'
+        working-directory: frontend
+        run: pnpm typecheck
+
+      - name: Lint frontend
+        if: env.PACKAGE == 'cli' || env.PACKAGE == 'app' || env.PACKAGE == 'shared'
+        working-directory: frontend
+        run: pnpm lint
+
+      - name: Build CLI
+        if: env.PACKAGE == 'cli'
+        working-directory: frontend
+        run: pnpm build:cli
+
+      - name: Pack CLI
+        if: env.PACKAGE == 'cli'
+        working-directory: frontend
+        run: pnpm --filter @memoneo/cli pack --pack-destination ../dist
+
+      - name: Build Android APK
+        if: env.PACKAGE == 'app'
+        working-directory: frontend/apps/app/android
+        run: NODE_ENV=production ./gradlew assembleRelease
+
+      - name: Copy Android APK
+        if: env.PACKAGE == 'app'
+        run: cp frontend/apps/app/android/app/build/outputs/apk/release/app-release.apk "dist/memoneo-android-${TAG_SAFE}.apk"
+
+      - name: Build shared package
+        if: env.PACKAGE == 'shared'
+        working-directory: frontend
+        run: pnpm --filter @memoneo/shared build
+
+      - name: Create shared package artifact
+        if: env.PACKAGE == 'shared'
+        working-directory: frontend
+        run: pnpm --filter @memoneo/shared pack --pack-destination ../dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+          name: ${{ env.PACKAGE }} v${{ env.VERSION }}
+          files: |
+            dist/*

@@ -1,0 +1,57 @@
+name: Release Tags
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Tag versioned packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Create package tags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          declare -A packages=(
+            ["api"]="backend/api/package.json"
+            ["auth"]="backend/auth/package.json"
+            ["cli"]="frontend/apps/cli/package.json"
+            ["app"]="frontend/apps/app/package.json"
+            ["shared"]="frontend/packages/shared/package.json"
+          )
+
+          for package in "${!packages[@]}"; do
+            path="${packages[$package]}"
+            if ! git diff --name-only HEAD^ HEAD -- "$path" | grep -q .; then
+              continue
+            fi
+
+            previous="$(git show "HEAD^:$path" | jq -r .version)"
+            current="$(jq -r .version "$path")"
+            if [ "$previous" = "$current" ]; then
+              continue
+            fi
+
+            tag="${package}@v${current}"
+            if git ls-remote --tags origin "refs/tags/$tag" | grep -q "$tag"; then
+              echo "Tag $tag already exists"
+              continue
+            fi
+
+            git tag "$tag"
+            git push origin "$tag"
+          done

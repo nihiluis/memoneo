@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "@memoneo/api",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,9 +10,9 @@
     "start": "tsx src/index.ts",
     "check": "tsc --noEmit",
     "test": "vitest run",
-    "changeset": "changeset",
-    "changeset:status": "changeset status",
-    "changeset:version": "changeset version",
+    "changeset": "cd ../.. && pnpm changeset",
+    "changeset:status": "cd ../.. && pnpm changeset:status",
+    "changeset:version": "cd ../.. && pnpm changeset:version",
     "openapi:download": "tsx src/scripts/download-openapi.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"

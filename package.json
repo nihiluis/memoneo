@@ -1,0 +1,20 @@
+{
+  "name": "memoneo",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.27.0",
+  "workspaces": [
+    "backend/api",
+    "backend/auth",
+    "frontend/apps/*",
+    "frontend/packages/*"
+  ],
+  "scripts": {
+    "changeset": "frontend/node_modules/.bin/changeset",
+    "changeset:status": "frontend/node_modules/.bin/changeset status",
+    "changeset:version": "frontend/node_modules/.bin/changeset version"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0"
+  }
+}

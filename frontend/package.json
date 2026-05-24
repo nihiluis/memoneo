@@ -7,11 +7,17 @@
     "app": "pnpm --filter @memoneo/app",
     "cli": "pnpm --filter @memoneo/cli",
     "build:cli": "pnpm --filter @memoneo/cli build",
+    "build:app:android": "cd apps/app/android && NODE_ENV=production GRADLE_USER_HOME=.cache/gradle ./gradlew assembleRelease",
     "lint:app": "pnpm --filter @memoneo/app lint",
+    "lint": "pnpm lint:app",
+    "test": "pnpm test:cli && pnpm --filter @memoneo/app test",
     "test:cli": "pnpm --filter @memoneo/cli test",
-    "changeset": "changeset",
-    "changeset:status": "changeset status",
-    "changeset:version": "changeset version"
+    "typecheck": "pnpm typecheck:cli && pnpm typecheck:app",
+    "typecheck:app": "pnpm --filter @memoneo/app exec tsc --noEmit -p tsconfig.typecheck.json",
+    "typecheck:cli": "pnpm --filter @memoneo/cli exec tsc --noEmit -p tsconfig.json",
+    "changeset": "cd .. && pnpm changeset",
+    "changeset:status": "cd .. && pnpm changeset:status",
+    "changeset:version": "cd .. && pnpm changeset:version"
   },
   "pnpm": {
     "overrides": {

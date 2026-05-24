@@ -1,3 +1,5 @@
 .DS_Store
 *.7z
 config.json
+.cache/
+node_modules/
