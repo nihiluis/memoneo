@@ -59,4 +59,7 @@ jobs:
 
             git tag "$tag"
             git push origin "$tag"
+            gh workflow run release.yml --ref main -f tag="$tag"
           done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

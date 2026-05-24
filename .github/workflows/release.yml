@@ -1,6 +1,12 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Package tag to release, for example api@v1.0.1
+        required: true
+        type: string
   push:
     tags:
       - "api@v*"
@@ -29,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
           package="${tag%%@v*}"
           version="${tag#*@v}"
           echo "PACKAGE=$package" >> "$GITHUB_ENV"
