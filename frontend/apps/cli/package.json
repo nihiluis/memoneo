@@ -7,6 +7,8 @@
   "scripts": {
     "prebuild": "pnpm --filter @memoneo/shared build",
     "build": "rimraf dist && tsc -b",
+    "build:binary": "pnpm run build && rimraf dist-bin && pkg . --targets node24-linux-x64 --no-bytecode --public-packages \"*\" --output dist-bin/memoneo-linux-x64 && pkg . --targets node24-macos-x64 --no-bytecode --no-signature --public-packages \"*\" --output dist-bin/memoneo-macos-x64 && pkg . --targets node24-macos-arm64 --no-bytecode --no-signature --public-packages \"*\" --output dist-bin/memoneo-macos-arm64 && pkg . --targets node24-win-x64 --no-bytecode --public-packages \"*\" --output dist-bin/memoneo-win-x64.exe",
+    "build:binary:linux": "pnpm run build && rimraf dist-bin && pkg . --targets node24-linux-x64 --no-bytecode --public-packages \"*\" --output dist-bin/memoneo-linux-x64",
     "dev": "node ./bin/dev.js",
     "dev:sync": "node ./bin/dev.js sync",
     "dev:upload": "node ./bin/dev.js upload",
@@ -23,7 +25,7 @@
     "test": "vitest run"
   },
   "bin": {
-    "cli": "./bin/run"
+    "memoneo": "./bin/run.js"
   },
   "homepage": "https://github.com/nihiluis/cliv2",
   "license": "MIT",
@@ -49,6 +51,7 @@
     "@types/cli-progress": "^3.11.6",
     "@types/node": "^22.0.0",
     "@types/uuid": "^10.0.0",
+    "@yao-pkg/pkg": "^6.19.0",
     "tslib": "^2.6.3",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"
@@ -59,6 +62,13 @@
     "commands": "./dist/commands",
     "plugins": [],
     "topicSeparator": " "
+  },
+  "pkg": {
+    "assets": [
+      "config.json",
+      "dist/**/*"
+    ],
+    "outputPath": "dist-bin"
   },
   "engines": {
     "node": ">=12.0.0"

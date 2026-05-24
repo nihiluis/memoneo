@@ -43,7 +43,7 @@ shared@v0.1.0
 
 - `api@vX.Y.Z`: `memoneo-api-api-vX.Y.Z.tar.gz`
 - `auth@vX.Y.Z`: `memoneo-auth-auth-vX.Y.Z.tar.gz`, `memoneo-auth`
-- `cli@vX.Y.Z`: packed CLI `.tgz`
+- `cli@vX.Y.Z`: standalone CLI binaries for Linux x64, macOS x64, macOS arm64, and Windows x64.
 - `app@vX.Y.Z`: `memoneo-android-app-vX.Y.Z.apk`
 - `shared@vX.Y.Z`: packed shared package `.tgz`
 

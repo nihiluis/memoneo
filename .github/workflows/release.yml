@@ -139,10 +139,15 @@ jobs:
         working-directory: frontend
         run: pnpm build:cli
 
-      - name: Pack CLI
+      - name: Build CLI binary
         if: env.PACKAGE == 'cli'
         working-directory: frontend
-        run: pnpm --filter @memoneo/cli pack --pack-destination ../dist
+        run: |
+          pnpm --filter @memoneo/cli build:binary
+          cp apps/cli/dist-bin/memoneo-linux-x64 ../dist/memoneo-${TAG_SAFE}-linux-x64
+          cp apps/cli/dist-bin/memoneo-macos-x64 ../dist/memoneo-${TAG_SAFE}-macos-x64
+          cp apps/cli/dist-bin/memoneo-macos-arm64 ../dist/memoneo-${TAG_SAFE}-macos-arm64
+          cp apps/cli/dist-bin/memoneo-win-x64.exe ../dist/memoneo-${TAG_SAFE}-win-x64.exe
 
       - name: Build Android APK
         if: env.PACKAGE == 'app'
