@@ -3,7 +3,8 @@
 TypeScript REST API for encrypted notes.
 
 Runtime dependencies:
-- Bun
+- Node.js
+- pnpm
 - Postgres
 - Auth service JWKS endpoint
 
@@ -21,6 +22,6 @@ Endpoints:
 
 Database:
 ```bash
-bun run db:generate
-bun run db:migrate
+pnpm db:generate
+pnpm db:migrate
 ```

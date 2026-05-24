@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises"
+
 const port = process.env.PORT ?? "8073"
 const url = process.env.OPENAPI_URL ?? `http://localhost:${port}/openapi/json`
 const outputPath = process.env.OPENAPI_OUT ?? "openapi.json"
@@ -11,6 +13,6 @@ if (!response.ok) {
 }
 
 const spec = await response.text()
-await Bun.write(outputPath, spec.endsWith("\n") ? spec : `${spec}\n`)
+await writeFile(outputPath, spec.endsWith("\n") ? spec : `${spec}\n`)
 
 console.log(`Downloaded OpenAPI spec from ${url} to ${outputPath}`)

@@ -1,5 +1,8 @@
+import { resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { Elysia, t } from "elysia"
 import { openapi } from "@elysia/openapi"
+import { node } from "@elysiajs/node"
 import { PORT } from "./env.js"
 import { verifyAuthorization } from "./auth.js"
 import { createLogger } from "./logger.js"
@@ -87,7 +90,7 @@ const requireUser = async (headers: Record<string, string | undefined>) => {
   }
 }
 
-export const app = new Elysia()
+export const app = new Elysia({ adapter: node() })
   .use(openapi({ path: "/openapi" }))
   .onError(({ code, error, request, set }) => {
     logger.error(
@@ -214,10 +217,13 @@ export const app = new Elysia()
       404: t.Null(),
     },
   })
-if (import.meta.main) {
-  app.listen(PORT)
 
-  console.log(
-    `Running at ${app.server?.hostname}:${app.server?.port}`
-  )
+const isEntrypoint =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+
+if (isEntrypoint) {
+  app.listen(Number(PORT))
+
+  console.log(`Running at http://localhost:${PORT}`)
 }

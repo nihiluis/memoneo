@@ -1,14 +1,15 @@
-# Use the official Bun image
-FROM oven/bun:1.0.30
+FROM node:24-slim
 
 # Set working directory
 WORKDIR /app
 
+RUN corepack enable
+
 # Copy package files
-COPY package.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN bun install
+RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application
 COPY . .
@@ -21,4 +22,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start the application
-CMD ["bun", "start"]
+CMD ["pnpm", "start"]
