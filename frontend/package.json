@@ -14,7 +14,7 @@
     "test:cli": "pnpm --filter @memoneo/cli test",
     "typecheck": "pnpm typecheck:cli && pnpm typecheck:app",
     "typecheck:app": "pnpm --filter @memoneo/app exec tsc --noEmit -p tsconfig.typecheck.json",
-    "typecheck:cli": "pnpm --filter @memoneo/cli exec tsc --noEmit -p tsconfig.json",
+    "typecheck:cli": "pnpm --filter @memoneo/shared build && pnpm --filter @memoneo/cli exec tsc --noEmit -p tsconfig.json",
     "changeset": "cd .. && pnpm changeset",
     "changeset:status": "cd .. && pnpm changeset:status",
     "changeset:version": "cd .. && pnpm changeset:version"
