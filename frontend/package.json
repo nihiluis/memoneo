@@ -8,11 +8,17 @@
     "cli": "pnpm --filter @memoneo/cli",
     "build:cli": "pnpm --filter @memoneo/cli build",
     "lint:app": "pnpm --filter @memoneo/app lint",
-    "test:cli": "pnpm --filter @memoneo/cli test"
+    "test:cli": "pnpm --filter @memoneo/cli test",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version"
   },
   "pnpm": {
     "overrides": {
       "lightningcss": "1.30.1"
     }
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0"
   }
 }
