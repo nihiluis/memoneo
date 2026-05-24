@@ -14,7 +14,7 @@
     "build:sync": "pnpm run dev:sync",
     "build:upload": "pnpm run dev:upload",
     "build:download": "pnpm run dev:download",
-    "postpack": "shx rm -f oclif.manifest.json",
+    "postpack": "rm -f oclif.manifest.json",
     "memoneo": "node ./bin/run.js",
     "sync": "node ./bin/run.js sync",
     "upload": "node ./bin/run.js upload",
