@@ -1,5 +1,5 @@
 .DS_Store
 *.7z
-config.json
+/config.json
 .cache/
 node_modules/
