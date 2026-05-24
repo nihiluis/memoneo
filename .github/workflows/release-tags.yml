@@ -40,7 +40,12 @@ jobs:
               continue
             fi
 
-            previous="$(git show "HEAD^:$path" | jq -r .version)"
+            if git cat-file -e "HEAD^:$path" 2>/dev/null; then
+              previous="$(git show "HEAD^:$path" | jq -r .version)"
+            else
+              previous=""
+            fi
+
             current="$(jq -r .version "$path")"
             if [ "$previous" = "$current" ]; then
               continue

@@ -24,12 +24,16 @@ jobs:
           node-version: "24"
 
       - name: Install Changesets
-        run: npm install --no-package-lock --ignore-scripts @changesets/cli@^2.31.0
+        run: |
+          mkdir -p /tmp/memoneo-changesets
+          cd /tmp/memoneo-changesets
+          npm install --no-package-lock --ignore-scripts @changesets/cli@^2.31.0
+          echo "/tmp/memoneo-changesets/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Create version PR
         uses: changesets/action@v1
         with:
-          version: npx changeset version
+          version: changeset version
           title: Version packages
           commit: Version packages
         env:
