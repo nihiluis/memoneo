@@ -19,3 +19,12 @@ https://github.com/user-attachments/assets/b1ededbe-1e05-4094-bf4a-611a1a3ed824
 Syncing the text note to your computer via the CLI.
 
 https://github.com/user-attachments/assets/8476bb5a-9f0d-464e-b396-85a8f7285312
+
+## Release
+```bash
+# Manual
+gh workflow run release.yml --ref main -f tag=api@v1.0.1
+gh workflow run release.yml --ref main -f tag=auth@v0.0.1
+gh workflow run release.yml --ref main -f tag=cli@v0.0.1
+gh workflow run release.yml --ref main -f tag=app@v1.0.1
+```
