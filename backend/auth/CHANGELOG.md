@@ -1,5 +1,11 @@
 # @memoneo/auth
 
+## 0.1.0
+
+### Minor Changes
+
+- c97f7bd: dockerfile adjustments
+
 ## 0.0.1
 
 ### Patch Changes
