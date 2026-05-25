@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"os"
 
 	"github.com/joho/godotenv"
 	_ "github.com/nihiluis/memoneo2/auth/docs"
@@ -24,8 +26,7 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := loadDotEnv(".env"); err != nil {
 		panic(err)
 	}
 
@@ -72,4 +73,13 @@ func main() {
 	logger.Zap.Infow("HTTP server starting", zap.String("port", httpConfig.Port))
 
 	server.Start()
+}
+
+func loadDotEnv(filename string) error {
+	err := godotenv.Load(filename)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	return nil
 }
