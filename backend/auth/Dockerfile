@@ -1,4 +1,4 @@
-FROM golang:1.23 as builder
+FROM golang:1.23 AS builder
 
 ENV APP_USER app
 ENV APP_HOME /go/src/app
@@ -16,9 +16,9 @@ WORKDIR $APP_HOME
 
 RUN go mod download
 RUN go mod verify
-RUN go build -o app
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o app .
 
-FROM debian:buster
+FROM debian:bookworm-slim
 
 ENV APP_USER app
 ENV APP_HOME /go/src/app
