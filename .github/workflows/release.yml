@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 env:
   NODE_VERSION: "24"
@@ -92,6 +93,24 @@ jobs:
         if: env.PACKAGE == 'api'
         run: docker build --tag "memoneo-api:${TAG_SAFE}" backend/api
 
+      - name: Log in to GHCR
+        if: env.PACKAGE == 'api' || env.PACKAGE == 'auth'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Publish API image to GHCR
+        if: env.PACKAGE == 'api'
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/memoneo-api"
+          docker tag "memoneo-api:${TAG_SAFE}" "${image}:v${VERSION}"
+          docker tag "memoneo-api:${TAG_SAFE}" "${image}:${TAG_SAFE}"
+          docker tag "memoneo-api:${TAG_SAFE}" "${image}:latest"
+          docker push "${image}:v${VERSION}"
+          docker push "${image}:${TAG_SAFE}"
+          docker push "${image}:latest"
+
       - name: Export API image
         if: env.PACKAGE == 'api'
         run: docker save "memoneo-api:${TAG_SAFE}" | gzip > "dist/memoneo-api-${TAG_SAFE}.tar.gz"
@@ -109,6 +128,20 @@ jobs:
       - name: Build auth image
         if: env.PACKAGE == 'auth'
         run: docker build --file backend/auth/Dockerfile --tag "memoneo-auth:${TAG_SAFE}" backend
+
+      - name: Publish auth image to GHCR
+        if: env.PACKAGE == 'auth'
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/memoneo-auth"
+          docker tag "memoneo-auth:${TAG_SAFE}" "${image}:v${VERSION}"
+          docker tag "memoneo-auth:${TAG_SAFE}" "${image}:${TAG_SAFE}"
+          docker tag "memoneo-auth:${TAG_SAFE}" "${image}:latest"
+          docker push "${image}:v${VERSION}"
+          docker push "${image}:${TAG_SAFE}"
+          docker push "${image}:latest"
 
       - name: Export auth image
         if: env.PACKAGE == 'auth'
