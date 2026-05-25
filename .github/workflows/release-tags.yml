@@ -6,6 +6,7 @@ on:
       - main
 
 permissions:
+  actions: write
   contents: write
 
 jobs:
@@ -54,11 +55,11 @@ jobs:
             tag="${package}@v${current}"
             if git ls-remote --tags origin "refs/tags/$tag" | grep -q "$tag"; then
               echo "Tag $tag already exists"
-              continue
+            else
+              git tag "$tag"
+              git push origin "$tag"
             fi
 
-            git tag "$tag"
-            git push origin "$tag"
             gh workflow run release.yml --ref main -f tag="$tag"
           done
         env:
