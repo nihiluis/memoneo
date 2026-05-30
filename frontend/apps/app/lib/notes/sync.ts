@@ -1,5 +1,6 @@
 import {
   createApiClient,
+  localNoteId,
   MarkdownFileInfo,
   type Note,
   type NoteFileData,
@@ -11,6 +12,11 @@ import enckey from "@/modules/enckey"
 import { getApiUrl } from "@/lib/settings/urls"
 
 import { loadNoteCache, saveNoteCache } from "./cache"
+import {
+  getDownloadOverwriteWarning,
+  getUploadOverwriteWarning,
+  type SingleNoteOverwriteWarning,
+} from "./syncWarnings"
 import {
   deleteLocalMarkdownFile,
   listLocalMarkdownFiles,
@@ -28,6 +34,14 @@ type SyncResult = {
   uploaded: number
   updatedLocal: number
   updatedRemote: number
+}
+
+export type SingleNoteSyncAction = "upload" | "sync"
+
+export type { SingleNoteOverwriteWarning }
+
+type SingleNoteSyncOptions = {
+  confirmOverwrite?: (warning: SingleNoteOverwriteWarning) => Promise<boolean>
 }
 
 export async function downloadRemoteNotes(auth: SyncAuth): Promise<SyncResult> {
@@ -202,12 +216,195 @@ export async function syncNotes(auth: SyncAuth): Promise<SyncResult> {
   return result
 }
 
+export async function uploadLocalNote(
+  auth: SyncAuth,
+  note: Note,
+  options: SingleNoteSyncOptions = {}
+): Promise<SyncResult> {
+  return syncLocalNote(auth, note, "upload", options)
+}
+
+export async function syncLocalNote(
+  auth: SyncAuth,
+  note: Note,
+  action: SingleNoteSyncAction = "sync",
+  options: SingleNoteSyncOptions = {}
+): Promise<SyncResult> {
+  const client = createApiClient(auth.token, getApiUrl(""))
+  const localFiles = await listLocalMarkdownFiles()
+  const file = findLocalFileForNote(localFiles, note)
+  if (!file) {
+    throw new Error("Unable to find the local markdown file for this note.")
+  }
+
+  const cache = await loadNoteCache()
+  const remoteNotes = await getRemoteNotes(client)
+  const remoteId = file.metadata.id
+  const remote = remoteId
+    ? remoteNotes.find(remoteNote => remoteNote.id === remoteId)
+    : undefined
+
+  if (!remoteId || !remote) {
+    const uploaded = await uploadNewLocalFile(client, file, auth.userId, remoteId)
+    cache[uploaded.id] = {
+      lastMd5Hash: await md5HashText(file.text),
+      lastSync: uploaded.updated_at,
+    }
+    await saveNoteCache(cache)
+    return { downloaded: 0, uploaded: 1, updatedLocal: 0, updatedRemote: 0 }
+  }
+
+  const localHash = await md5HashText(file.text)
+  const hasLocalContentChange = await hasLocalContentChanged(
+    file,
+    remote,
+    cache[remote.id],
+    localHash
+  )
+  const locationChanged =
+    file.fileName !== remote.file?.title || file.path !== remote.file?.path
+  const shouldUpload =
+    action === "upload" || hasLocalContentChange || locationChanged
+
+  if (shouldUpload) {
+    const warning = getUploadOverwriteWarning(remote, file, cache[remote.id])
+    if (warning && !(await confirmOverwrite(options, warning))) {
+      return { downloaded: 0, uploaded: 0, updatedLocal: 0, updatedRemote: 0 }
+    }
+
+    const uploaded = await uploadExistingLocalFile(
+      client,
+      file,
+      remote,
+      action === "upload" || hasLocalContentChange
+    )
+    cache[uploaded.id] = {
+      lastMd5Hash: localHash,
+      lastSync: uploaded.updated_at,
+    }
+    await saveNoteCache(cache)
+    return { downloaded: 0, uploaded: 0, updatedLocal: 0, updatedRemote: 1 }
+  }
+
+  if (remote.file && remote.version > (file.metadata.version ?? 0)) {
+    const warning = getDownloadOverwriteWarning(remote, file, cache[remote.id])
+    if (warning && !(await confirmOverwrite(options, warning))) {
+      return { downloaded: 0, uploaded: 0, updatedLocal: 0, updatedRemote: 0 }
+    }
+
+    await writeRemoteNoteToLocal(remote)
+    cache[remote.id] = {
+      lastMd5Hash: await md5HashText(await decryptRemoteNote(remote)),
+      lastSync: remote.updated_at,
+    }
+    await saveNoteCache(cache)
+    return { downloaded: 0, uploaded: 0, updatedLocal: 1, updatedRemote: 0 }
+  }
+
+  return { downloaded: 0, uploaded: 0, updatedLocal: 0, updatedRemote: 0 }
+}
+
 async function getRemoteNotes(client: ReturnType<typeof createApiClient>) {
   const { data, error } = await client.getNotes()
   if (error) {
     throw error
   }
   return data ?? []
+}
+
+async function uploadNewLocalFile(
+  client: ReturnType<typeof createApiClient>,
+  file: MarkdownFileInfo,
+  userId: string,
+  existingId?: string
+) {
+  const id = existingId ?? randomUUID()
+  const note = await localFileToNewNote(file, id, userId)
+  const { data, error } = await client.upsertNotes([note])
+  if (error) {
+    throw error
+  }
+
+  const inserted = data?.[0]
+  if (!inserted) {
+    throw new Error("Unable to upload local note")
+  }
+
+  const fileData = noteFileData(file, inserted.id)
+  const { error: fileError } = await client.upsertNoteFiles([fileData])
+  if (fileError) {
+    throw fileError
+  }
+
+  await writeLocalNote(inserted, file.text, fileData)
+  return inserted
+}
+
+async function uploadExistingLocalFile(
+  client: ReturnType<typeof createApiClient>,
+  file: MarkdownFileInfo,
+  remote: Note,
+  hasLocalContentChange: boolean
+) {
+  const fileData = noteFileData(file, remote.id)
+  let uploaded = remote
+
+  if (hasLocalContentChange) {
+    const encrypted = await enckey.encryptText(file.text)
+    const { data, error } = await client.updateNote(remote.id, {
+      title: file.metadata.title ?? file.fileName,
+      body: encrypted.substring(16),
+      body_iv: encrypted.substring(0, 16),
+      date: file.metadata.date ?? remote.date,
+      version: remote.version + 1,
+    })
+    if (error) {
+      throw error
+    }
+    if (!data) {
+      throw new Error("Unable to update remote note")
+    }
+    uploaded = data
+  }
+
+  const { error } = await client.upsertNoteFiles([fileData])
+  if (error) {
+    throw error
+  }
+
+  await writeLocalNote(uploaded, file.text, fileData)
+  return uploaded
+}
+
+async function hasLocalContentChanged(
+  file: MarkdownFileInfo,
+  remote: Note,
+  cacheEntry: { lastMd5Hash?: string } | undefined,
+  localHash: string
+) {
+  const lastHash = cacheEntry?.lastMd5Hash ?? ""
+  if (lastHash) {
+    return localHash !== lastHash
+  }
+
+  const remoteBody = await decryptRemoteNote(remote)
+  return localHash !== (await md5HashText(remoteBody))
+}
+
+function findLocalFileForNote(files: MarkdownFileInfo[], note: Note) {
+  return files.find(file => {
+    if (file.metadata.id && file.metadata.id === note.id) {
+      return true
+    }
+    return localNoteId(file) === note.id
+  })
+}
+
+async function confirmOverwrite(
+  options: SingleNoteSyncOptions,
+  warning: SingleNoteOverwriteWarning
+) {
+  return options.confirmOverwrite ? options.confirmOverwrite(warning) : true
 }
 
 async function localFileToNewNote(

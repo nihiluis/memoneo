@@ -6,19 +6,30 @@ import {
 } from "@gorhom/bottom-sheet"
 import type { Note } from "@memoneo/shared"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useAtom } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import type React from "react"
 import { useCallback, useRef, useState } from "react"
 import { Alert, Dimensions, StyleSheet } from "react-native"
 import { Drawer } from "react-native-drawer-layout"
 
+import { authAtom, tokenAtom } from "@/lib/auth/state"
 import { loadNoteCache } from "@/lib/notes/cache"
 import { deleteLocalNote } from "@/lib/notes/local"
-import { NOTES_CACHE_QUERY_KEY, NOTES_LOCAL_QUERY_KEY } from "@/lib/notes/query"
+import {
+  NOTES_CACHE_QUERY_KEY,
+  NOTES_FOLDERS_QUERY_KEY,
+  NOTES_LOCAL_QUERY_KEY,
+} from "@/lib/notes/query"
 import {
   selectedNoteIdAtom,
   useNotesState,
 } from "@/lib/notes/state"
+import {
+  syncLocalNote,
+  uploadLocalNote,
+  type SingleNoteOverwriteWarning,
+  type SingleNoteSyncAction,
+} from "@/lib/notes/sync"
 
 import { AppDrawerContext } from "./appDrawerContext"
 import { DrawerContent } from "./DrawerContent"
@@ -31,6 +42,8 @@ const DRAWER_WIDTH = Math.min(340, WINDOW_WIDTH * 0.86)
 
 export function AppDrawer({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
+  const auth = useAtomValue(authAtom)
+  const token = useAtomValue(tokenAtom)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [optionsNote, setOptionsNote] = useState<Note | null>(null)
   const [selectedNoteId, setSelectedNoteId] = useAtom(selectedNoteIdAtom)
@@ -85,6 +98,57 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
     },
   })
 
+  const singleNoteSyncMutation = useMutation({
+    mutationFn: async ({
+      action,
+      note,
+    }: {
+      action: SingleNoteSyncAction
+      note: Note
+    }) => {
+      if (!auth.isAuthenticated || !token) {
+        throw new Error("Sign in from Settings before syncing notes.")
+      }
+
+      const syncAuth = { token, userId: auth.user.id }
+      const options = { confirmOverwrite: confirmSingleNoteOverwrite }
+
+      if (action === "upload") {
+        return uploadLocalNote(syncAuth, note, options)
+      }
+
+      return syncLocalNote(syncAuth, note, action, options)
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: NOTES_FOLDERS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: NOTES_CACHE_QUERY_KEY }),
+      ])
+      await Promise.all([
+        queryClient.refetchQueries({
+          queryKey: NOTES_LOCAL_QUERY_KEY,
+          type: "active",
+        }),
+        queryClient.refetchQueries({
+          queryKey: NOTES_FOLDERS_QUERY_KEY,
+          type: "active",
+        }),
+        queryClient.refetchQueries({
+          queryKey: NOTES_CACHE_QUERY_KEY,
+          type: "active",
+        }),
+      ])
+      closeNoteOptions()
+    },
+    onError: error => {
+      Alert.alert(
+        "Sync failed",
+        error instanceof Error ? error.message : String(error)
+      )
+    },
+  })
+
   const confirmDeleteNote = useCallback(
     (note: Note) => {
       Alert.alert(
@@ -101,6 +165,17 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
       )
     },
     [deleteNoteMutation]
+  )
+
+  const syncSingleNote = useCallback(
+    (note: Note, action: SingleNoteSyncAction) => {
+      if (singleNoteSyncMutation.isPending) {
+        return
+      }
+
+      singleNoteSyncMutation.mutate({ note, action })
+    },
+    [singleNoteSyncMutation]
   )
 
   const renderBackdrop = useCallback(
@@ -146,20 +221,39 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
         ref={noteOptionsSheetRef}
-        snapPoints={["46%"]}>
+        snapPoints={["64%"]}>
         <BottomSheetView style={styles.flex}>
           {optionsNote && (
             <NoteOptionsSheet
               isDeleting={deleteNoteMutation.isPending}
+              isSyncing={singleNoteSyncMutation.isPending}
               lastSync={lastSync}
               note={optionsNote}
               onDelete={confirmDeleteNote}
+              onSync={syncSingleNote}
             />
           )}
         </BottomSheetView>
       </BottomSheetModal>
     </AppDrawerContext.Provider>
   )
+}
+
+function confirmSingleNoteOverwrite(warning: SingleNoteOverwriteWarning) {
+  return new Promise<boolean>(resolve => {
+    Alert.alert(warning.title, warning.message, [
+      {
+        text: "Cancel",
+        style: "cancel",
+        onPress: () => resolve(false),
+      },
+      {
+        text: warning.confirmText,
+        style: "destructive",
+        onPress: () => resolve(true),
+      },
+    ])
+  })
 }
 
 const styles = StyleSheet.create({

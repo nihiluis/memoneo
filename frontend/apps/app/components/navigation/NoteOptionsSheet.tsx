@@ -1,24 +1,30 @@
 import type { Note } from "@memoneo/shared"
-import { FileText, Trash2 } from "lucide-react-native"
+import { FileText, RefreshCw, Trash2, Upload } from "lucide-react-native"
 import { Pressable, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
+import type { SingleNoteSyncAction } from "@/lib/notes/sync"
 
 type NoteOptionsSheetProps = {
   isDeleting: boolean
+  isSyncing: boolean
   lastSync?: string
   note: Note
   onDelete: (note: Note) => void
+  onSync: (note: Note, action: SingleNoteSyncAction) => void
 }
 
 export function NoteOptionsSheet({
   isDeleting,
+  isSyncing,
   lastSync,
   note,
   onDelete,
+  onSync,
 }: NoteOptionsSheetProps) {
   const canDelete = Boolean(note.file?.title)
+  const canSync = note.id !== "unsaved" && Boolean(note.file?.title)
 
   return (
     <View className="flex-1 gap-2 px-5 pb-6 pt-2">
@@ -44,6 +50,36 @@ export function NoteOptionsSheet({
         <MText numberOfLines={1} className="text-xs text-zinc-400">
           Last sync {lastSync ? formatDateTime(lastSync) : "Not synced"}
         </MText>
+      </View>
+
+      <View className="gap-2">
+        <Pressable
+          accessibilityRole="button"
+          disabled={!canSync || isSyncing}
+          onPress={() => onSync(note, "upload")}
+          className={cn(
+            "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
+            (!canSync || isSyncing) && "opacity-50"
+          )}>
+          <Upload size={18} color="#a1a1aa" />
+          <MText className="text-[15px] font-bold text-zinc-100">
+            {isSyncing ? "Syncing..." : "Upload note"}
+          </MText>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={!canSync || isSyncing}
+          onPress={() => onSync(note, "sync")}
+          className={cn(
+            "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
+            (!canSync || isSyncing) && "opacity-50"
+          )}>
+          <RefreshCw size={18} color="#a1a1aa" />
+          <MText className="text-[15px] font-bold text-zinc-100">
+            {isSyncing ? "Syncing..." : "Sync note"}
+          </MText>
+        </Pressable>
       </View>
 
       <Pressable
