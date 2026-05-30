@@ -24,6 +24,7 @@
     "@elysiajs/node": "^1.4.5",
     "@sinclair/typebox": "^0.34.49",
     "drizzle-orm": "^0.45.2",
+    "dotenv": "^16.6.1",
     "elysia": "^1.4.28",
     "jose": "^6.2.3",
     "pino": "^10.3.1",

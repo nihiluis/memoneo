@@ -1,3 +1,7 @@
+import { loadDotEnv } from "./loadDotEnv.js"
+
+loadDotEnv()
+
 export const DEV = process.env.NODE_ENV === "development"
 
 export const AUTH_API_URL = process.env.AUTH_API_URL ?? "http://localhost:8089"

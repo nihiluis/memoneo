@@ -3,3 +3,4 @@
 /config.json
 .cache/
 node_modules/
+.pnpm-store/
