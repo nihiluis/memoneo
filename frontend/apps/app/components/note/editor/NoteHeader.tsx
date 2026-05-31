@@ -1,6 +1,6 @@
 import type { Note } from "@memoneo/shared"
 import { Menu, Save } from "lucide-react-native"
-import { Pressable, TextInput, View } from "react-native"
+import { Pressable, StyleSheet, TextInput, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
@@ -21,6 +21,7 @@ export function NoteHeader({
   saveDisabled = false,
 }: NoteHeaderProps) {
   const { openDrawer } = useAppDrawer()
+  const saveColor = saveDisabled ? "#52525b" : "#a1a1aa"
 
   return (
     <View className="h-14 flex-row items-center border-b border-border px-4">
@@ -41,12 +42,45 @@ export function NoteHeader({
       <Pressable
         accessibilityLabel="Save note"
         accessibilityRole="button"
-        className="ml-2 h-10 flex-row items-center justify-center gap-1.5 rounded-md px-3 opacity-100 disabled:opacity-40"
+        className="ml-2 h-10 flex-row items-center justify-center gap-1.5 rounded-md px-3"
         disabled={saveDisabled}
-        onPress={onSave}>
-        <Save size={20} color="#a1a1aa" />
-        <MText className="text-sm font-medium text-muted-foreground">Save</MText>
+        hitSlop={8}
+        onPress={() => {
+          if (__DEV__) {
+            console.log("NoteHeader save press", {
+              disabled: saveDisabled,
+              noteId: note?.id,
+            })
+          }
+          onSave()
+        }}
+        style={({ pressed }) => [
+          styles.saveButton,
+          saveDisabled && styles.saveButtonDisabled,
+          pressed && !saveDisabled && styles.saveButtonPressed,
+        ]}>
+        <Save size={20} color={saveColor} />
+        <MText
+          className={[
+            "text-sm font-medium",
+            saveDisabled ? "text-muted-foreground/50" : "text-muted-foreground",
+          ].join(" ")}>
+          Save
+        </MText>
       </Pressable>
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  saveButton: {
+    transform: [{ scale: 1 }],
+  },
+  saveButtonDisabled: {
+    opacity: 0.4,
+  },
+  saveButtonPressed: {
+    backgroundColor: "#27272a",
+    transform: [{ scale: 0.96 }],
+  },
+})

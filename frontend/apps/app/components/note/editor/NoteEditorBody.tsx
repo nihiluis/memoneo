@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { StyleSheet, View } from "react-native"
 import {
   EnrichedMarkdownTextInput,
@@ -6,9 +6,14 @@ import {
   type MarkdownTextInputStyle,
 } from "react-native-enriched-markdown"
 import { KeyboardAvoidingView } from "react-native-keyboard-controller"
-
-import { MarkdownToolbar } from "./MarkdownToolbar"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+import {
+  escapeMarkdownForPlainEditing,
+  normalizeNoteBody,
+  shouldEditAsPlainMarkdown,
+} from "./markdownInputMode"
+import { MarkdownToolbar } from "./MarkdownToolbar"
 
 type NoteEditorBodyProps = {
   defaultBody: string
@@ -44,8 +49,25 @@ function NoteEditorBodyComponent({
   if (__DEV__) {
     console.log("NoteEditorBody render", JSON.stringify({ defaultBody, noteId }))
   }
+  const normalizedDefaultBody = useMemo(
+    () => normalizeNoteBody(defaultBody),
+    [defaultBody],
+  )
+  const editAsPlainMarkdown = useMemo(
+    () => shouldEditAsPlainMarkdown(normalizedDefaultBody),
+    [normalizedDefaultBody],
+  )
+  const editorDefaultValue = useMemo(
+    () =>
+      editAsPlainMarkdown
+        ? escapeMarkdownForPlainEditing(normalizedDefaultBody)
+        : normalizedDefaultBody,
+    [editAsPlainMarkdown, normalizedDefaultBody],
+  )
   const insets = useSafeAreaInsets()
   const editorRef = useRef<EnrichedMarkdownTextInputInstance>(null)
+  const currentBodyRef = useRef(normalizedDefaultBody)
+  const [selection, setSelection] = useState({ start: 0, end: 0 })
 
   useEffect(() => {
     if (__DEV__) {
@@ -57,6 +79,67 @@ function NoteEditorBodyComponent({
       }
     }
   }, [noteId])
+
+  useEffect(() => {
+    currentBodyRef.current = normalizedDefaultBody
+    setSelection({ start: 0, end: 0 })
+  }, [normalizedDefaultBody, noteId])
+
+  const handlePlainMarkdownChange = useCallback(
+    (nextBody: string) => {
+      const normalizedBody = normalizeNoteBody(nextBody)
+      currentBodyRef.current = normalizedBody
+      onBodyChange(normalizedBody)
+    },
+    [onBodyChange],
+  )
+
+  const applyPlainMarkdownDelimiter = useCallback(
+    (delimiter: string) => {
+      const body = currentBodyRef.current
+      const start = Math.max(0, Math.min(selection.start, body.length))
+      const end = Math.max(start, Math.min(selection.end, body.length))
+      const selectedText = body.slice(start, end)
+      const nextBody =
+        body.slice(0, start) +
+        delimiter +
+        selectedText +
+        delimiter +
+        body.slice(end)
+      const nextSelection = selectedText
+        ? {
+            start: start + delimiter.length,
+            end: end + delimiter.length,
+          }
+        : {
+            start: start + delimiter.length,
+            end: start + delimiter.length,
+          }
+
+      currentBodyRef.current = nextBody
+      onBodyChange(nextBody)
+      editorRef.current?.setValue(escapeMarkdownForPlainEditing(nextBody))
+      setSelection(nextSelection)
+      setTimeout(() => {
+        editorRef.current?.setSelection(nextSelection.start, nextSelection.end)
+      }, 0)
+    },
+    [onBodyChange, selection],
+  )
+
+  const plainMarkdownActions = useMemo(
+    () =>
+      editAsPlainMarkdown
+        ? {
+            bold: () => applyPlainMarkdownDelimiter("**"),
+            italic: () => applyPlainMarkdownDelimiter("*"),
+            strikethrough: () => applyPlainMarkdownDelimiter("~~"),
+            underline: () => applyPlainMarkdownDelimiter("_"),
+          }
+        : undefined,
+    [applyPlainMarkdownDelimiter, editAsPlainMarkdown],
+  )
+
   const markdownStyle: MarkdownTextInputStyle = useMemo(
     () => ({
       strong: { color: "#f8fafc" },
@@ -76,9 +159,13 @@ function NoteEditorBodyComponent({
         <EnrichedMarkdownTextInput
           key={noteId}
           ref={editorRef}
-          defaultValue={defaultBody}
+          defaultValue={editorDefaultValue}
           markdownStyle={markdownStyle}
-          onChangeMarkdown={onBodyChange}
+          onChangeMarkdown={editAsPlainMarkdown ? undefined : onBodyChange}
+          onChangeSelection={setSelection}
+          onChangeText={
+            editAsPlainMarkdown ? handlePlainMarkdownChange : undefined
+          }
           placeholder="Start writing..."
           placeholderTextColor="#71717a"
           selectionColor="#94a3b8"
@@ -87,6 +174,7 @@ function NoteEditorBodyComponent({
         <MarkdownToolbar
           bottomInset={insets.bottom}
           editorRef={editorRef}
+          plainMarkdownActions={plainMarkdownActions}
           styleState={null}
         />
       </View>

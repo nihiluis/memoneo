@@ -11,6 +11,7 @@ import { selectedNoteAtom, selectedNoteIdAtom, useNotesState } from "@/lib/notes
 
 import { NoteEditorBody } from "./NoteEditorBody"
 import { NoteHeader } from "./NoteHeader"
+import { normalizeNoteBody } from "./markdownInputMode"
 
 type DraftSnapshot = {
   noteId: string
@@ -63,6 +64,12 @@ export function NoteReader() {
       return { kind: "updated" as const, note: updatedNote, draft }
     },
     onSuccess: result => {
+      console.log("NoteReader save success", {
+        kind: result.kind,
+        noteId: result.note.id,
+        title: result.note.title,
+        body: result.note.body,
+      })
       upsertNoteInLocalQueryCache(queryClient, result.note)
 
       if (result.kind === "created") {
@@ -103,6 +110,11 @@ export function NoteReader() {
       title: titleRef.current,
       body: bodyRef.current,
     }
+    console.log("NoteReader save", {
+      noteId: draft.noteId,
+      title: draft.title,
+      body: draft.body,
+    })
     saveNoteMutation.mutate({ note: currentNote, draft })
   }, [saveNoteMutation])
 
@@ -112,7 +124,7 @@ export function NoteReader() {
   }, [])
 
   const handleBodyChange = useCallback((nextBody: string) => {
-    bodyRef.current = nextBody
+    bodyRef.current = normalizeNoteBody(nextBody)
   }, [])
 
   // When the selected note (or its id) changes: sync refs, reset draft/saved snapshots,
@@ -128,7 +140,7 @@ export function NoteReader() {
     noteRef.current = note
 
     const nextTitle = note?.title ?? ""
-    const nextBody = note?.body ?? ""
+    const nextBody = normalizeNoteBody(note?.body ?? "")
 
     titleRef.current = nextTitle
     bodyRef.current = nextBody
@@ -169,7 +181,7 @@ export function NoteReader() {
 
       {!isLoading && !error && note && (
         <NoteEditorBody
-          defaultBody={note.body}
+          defaultBody={normalizeNoteBody(note.body)}
           noteId={note.id}
           onBodyChange={handleBodyChange}
         />

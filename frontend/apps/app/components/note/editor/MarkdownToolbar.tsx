@@ -16,12 +16,19 @@ import { ToolbarButton } from "./ToolbarButton"
 type MarkdownToolbarProps = {
   bottomInset: number
   editorRef: React.RefObject<EnrichedMarkdownTextInputInstance | null>
+  plainMarkdownActions?: {
+    bold: () => void
+    italic: () => void
+    strikethrough: () => void
+    underline: () => void
+  }
   styleState: StyleState | null
 }
 
 export function MarkdownToolbar({
   bottomInset,
   editorRef,
+  plainMarkdownActions,
   styleState,
 }: MarkdownToolbarProps) {
   return (
@@ -33,7 +40,9 @@ export function MarkdownToolbar({
         <ToolbarButton
           accessibilityLabel="Bold"
           active={styleState?.bold.isActive}
-          onPress={() => editorRef.current?.toggleBold()}>
+          onPress={() =>
+            plainMarkdownActions?.bold() ?? editorRef.current?.toggleBold()
+          }>
           <Bold
             size={18}
             color={styleState?.bold.isActive ? "#f8fafc" : "#a1a1aa"}
@@ -42,7 +51,9 @@ export function MarkdownToolbar({
         <ToolbarButton
           accessibilityLabel="Italic"
           active={styleState?.italic.isActive}
-          onPress={() => editorRef.current?.toggleItalic()}>
+          onPress={() =>
+            plainMarkdownActions?.italic() ?? editorRef.current?.toggleItalic()
+          }>
           <Italic
             size={18}
             color={styleState?.italic.isActive ? "#f8fafc" : "#a1a1aa"}
@@ -51,7 +62,10 @@ export function MarkdownToolbar({
         <ToolbarButton
           accessibilityLabel="Underline"
           active={styleState?.underline.isActive}
-          onPress={() => editorRef.current?.toggleUnderline()}>
+          onPress={() =>
+            plainMarkdownActions?.underline() ??
+            editorRef.current?.toggleUnderline()
+          }>
           <Underline
             size={18}
             color={styleState?.underline.isActive ? "#f8fafc" : "#a1a1aa"}
@@ -60,7 +74,10 @@ export function MarkdownToolbar({
         <ToolbarButton
           accessibilityLabel="Strikethrough"
           active={styleState?.strikethrough.isActive}
-          onPress={() => editorRef.current?.toggleStrikethrough()}>
+          onPress={() =>
+            plainMarkdownActions?.strikethrough() ??
+            editorRef.current?.toggleStrikethrough()
+          }>
           <Strikethrough
             size={18}
             color={styleState?.strikethrough.isActive ? "#f8fafc" : "#a1a1aa"}
