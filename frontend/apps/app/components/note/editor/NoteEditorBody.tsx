@@ -1,4 +1,12 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  type ElementRef,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import {
   StyleSheet,
   Text,
@@ -11,6 +19,7 @@ import {
 import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
+import { useColorScheme } from "@/hooks/useColorScheme"
 import { useThemeColor } from "@/hooks/useThemeColor"
 
 import {
@@ -59,17 +68,17 @@ function NoteEditorBodyComponent({
     () => normalizeNoteBody(defaultBody),
     [defaultBody],
   )
+  const { colorScheme } = useColorScheme()
+  const isDark = colorScheme === "dark"
   const insets = useSafeAreaInsets()
   const editorColor = useThemeColor({}, "text")
   const currentBodyRef = useRef(normalizedDefaultBody)
+  const inputRef = useRef<ElementRef<typeof TextInput>>(null)
+  const selectionRef = useRef({ start: 0, end: 0 })
   const [body, setBody] = useState(normalizedDefaultBody)
-  const [selection, setSelection] = useState({ start: 0, end: 0 })
+  const [boldActive, setBoldActive] = useState(false)
   const [scrollY, setScrollY] = useState(0)
   const boldSegments = useMemo(() => parseBoldMarkdownSegments(body), [body])
-  const boldActive = useMemo(
-    () => isSelectionInBoldMarkdown(body, selection),
-    [body, selection],
-  )
 
   useEffect(() => {
     if (__DEV__) {
@@ -84,8 +93,9 @@ function NoteEditorBodyComponent({
 
   useEffect(() => {
     currentBodyRef.current = normalizedDefaultBody
+    selectionRef.current = { start: 0, end: 0 }
     setBody(normalizedDefaultBody)
-    setSelection({ start: 0, end: 0 })
+    setBoldActive(false)
     setScrollY(0)
   }, [normalizedDefaultBody, noteId])
 
@@ -101,7 +111,17 @@ function NoteEditorBodyComponent({
 
   const handleSelectionChange = useCallback(
     (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
-      setSelection(event.nativeEvent.selection)
+      const nextSelection = event.nativeEvent.selection
+      selectionRef.current = nextSelection
+      const nextBoldActive = isSelectionInBoldMarkdown(
+        currentBodyRef.current,
+        nextSelection,
+      )
+      setBoldActive((currentBoldActive) =>
+        currentBoldActive === nextBoldActive
+          ? currentBoldActive
+          : nextBoldActive,
+      )
     },
     [],
   )
@@ -111,15 +131,23 @@ function NoteEditorBodyComponent({
   }, [])
 
   const handleToggleBold = useCallback(() => {
-    const result = toggleBoldMarkdown(currentBodyRef.current, selection)
+    const result = toggleBoldMarkdown(currentBodyRef.current, selectionRef.current)
     currentBodyRef.current = result.body
+    selectionRef.current = result.selection
     setBody(result.body)
-    setSelection(result.selection)
+    setBoldActive(isSelectionInBoldMarkdown(result.body, result.selection))
+    inputRef.current?.setNativeProps({ selection: result.selection })
     onBodyChange(result.body)
-  }, [onBodyChange, selection])
+  }, [onBodyChange])
 
-  const selectionColor = "#94a3b8"
-  const editorTextColor = body ? "rgba(0, 0, 0, 0.01)" : editorColor
+  const cursorColor = "#94a3b8"
+  const selectionColor = isDark
+    ? "rgba(51, 65, 85, 0.72)"
+    : "rgba(148, 163, 184, 0.36)"
+  const hiddenEditorTextColor = /^#[0-9a-fA-F]{6}$/.test(editorColor)
+    ? `${editorColor}03`
+    : "rgba(255, 255, 255, 0.01)"
+  const editorTextColor = body ? hiddenEditorTextColor : editorColor
   const textInputStyle = useMemo(
     () => [
       styles.editor,
@@ -140,11 +168,11 @@ function NoteEditorBodyComponent({
         <Text
           pointerEvents="none"
           style={[
-      styles.editor,
-      styles.preview,
-      { color: editorColor },
-      { transform: [{ translateY: -scrollY }] },
-    ]}>
+            styles.editor,
+            styles.preview,
+            { color: editorColor },
+            { transform: [{ translateY: -scrollY }] },
+          ]}>
           {boldSegments.map((segment, index) => (
             <Text
               key={`${index}-${segment.text}`}
@@ -155,14 +183,19 @@ function NoteEditorBodyComponent({
         </Text>
         <TextInput
           key={noteId}
+          ref={inputRef}
+          autoComplete="off"
+          autoCorrect={false}
           multiline
           onChangeText={handleBodyChange}
           onScroll={handleScroll}
           onSelectionChange={handleSelectionChange}
           placeholder="Start writing..."
           placeholderTextColor="#71717a"
-          selection={selection}
+          cursorColor={cursorColor}
           selectionColor={selectionColor}
+          selectionHandleColor={cursorColor}
+          spellCheck={false}
           style={textInputStyle}
           textAlignVertical="top"
           value={body}

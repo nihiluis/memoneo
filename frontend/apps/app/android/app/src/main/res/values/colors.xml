@@ -3,4 +3,9 @@
   <color name="iconBackground">#ffffff</color>
   <color name="colorPrimary">#023c69</color>
   <color name="colorPrimaryDark">#ffffff</color>
+  <color name="colorAccent">#64748b</color>
+  <color name="editTextColor">#11181c</color>
+  <color name="editTextColorHint">#71717a</color>
+  <color name="editTextColorHighlight">#cbd5e1</color>
+  <color name="windowBackground">#ffffff</color>
 </resources>

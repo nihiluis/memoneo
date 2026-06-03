@@ -1,1 +1,11 @@
-<resources/>
+<resources>
+  <color name="splashscreen_background">#09090b</color>
+  <color name="iconBackground">#09090b</color>
+  <color name="colorPrimary">#a1a1aa</color>
+  <color name="colorPrimaryDark">#09090b</color>
+  <color name="colorAccent">#94a3b8</color>
+  <color name="editTextColor">#ECEDEE</color>
+  <color name="editTextColorHint">#71717a</color>
+  <color name="editTextColorHighlight">#334155</color>
+  <color name="windowBackground">#09090b</color>
+</resources>

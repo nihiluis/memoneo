@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, TextInput, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
+import { useColorScheme } from "@/hooks/useColorScheme"
 
 type NoteHeaderProps = {
   note: Note | null
@@ -21,7 +22,13 @@ export function NoteHeader({
   saveDisabled = false,
 }: NoteHeaderProps) {
   const { openDrawer } = useAppDrawer()
+  const { colorScheme } = useColorScheme()
   const saveColor = saveDisabled ? "#52525b" : "#a1a1aa"
+  const cursorColor = "#94a3b8"
+  const selectionColor =
+    colorScheme === "dark"
+      ? "rgba(51, 65, 85, 0.72)"
+      : "rgba(148, 163, 184, 0.36)"
 
   return (
     <View className="h-14 flex-row items-center border-b border-border px-4">
@@ -32,11 +39,17 @@ export function NoteHeader({
         <Menu size={24} color="#a1a1aa" />
       </Pressable>
       <TextInput
+        autoComplete="off"
+        autoCorrect={false}
         className="flex-1 p-0 text-2xl font-semibold text-foreground"
         editable={!!note}
         onChangeText={onChangeTitle}
         placeholder="Untitled"
         placeholderTextColor="#71717a"
+        cursorColor={cursorColor}
+        selectionColor={selectionColor}
+        selectionHandleColor={cursorColor}
+        spellCheck={false}
         value={title}
       />
       <Pressable
