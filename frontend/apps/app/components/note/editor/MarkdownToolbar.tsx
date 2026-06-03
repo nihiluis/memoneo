@@ -1,35 +1,18 @@
-import {
-  Bold,
-  Italic,
-  Strikethrough,
-  Underline,
-} from "lucide-react-native"
-import type React from "react"
+import { Bold } from "lucide-react-native"
 import { StyleSheet, View } from "react-native"
-import type {
-  EnrichedMarkdownTextInputInstance,
-  StyleState,
-} from "react-native-enriched-markdown"
 
 import { ToolbarButton } from "./ToolbarButton"
 
 type MarkdownToolbarProps = {
+  boldActive?: boolean
   bottomInset: number
-  editorRef: React.RefObject<EnrichedMarkdownTextInputInstance | null>
-  plainMarkdownActions?: {
-    bold: () => void
-    italic: () => void
-    strikethrough: () => void
-    underline: () => void
-  }
-  styleState: StyleState | null
+  onToggleBold: () => void
 }
 
 export function MarkdownToolbar({
+  boldActive,
   bottomInset,
-  editorRef,
-  plainMarkdownActions,
-  styleState,
+  onToggleBold,
 }: MarkdownToolbarProps) {
   return (
     <View
@@ -39,49 +22,9 @@ export function MarkdownToolbar({
       <View className="flex-row items-center justify-center gap-1 rounded-full bg-muted px-4 py-2">
         <ToolbarButton
           accessibilityLabel="Bold"
-          active={styleState?.bold.isActive}
-          onPress={() =>
-            plainMarkdownActions?.bold() ?? editorRef.current?.toggleBold()
-          }>
-          <Bold
-            size={18}
-            color={styleState?.bold.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-        <ToolbarButton
-          accessibilityLabel="Italic"
-          active={styleState?.italic.isActive}
-          onPress={() =>
-            plainMarkdownActions?.italic() ?? editorRef.current?.toggleItalic()
-          }>
-          <Italic
-            size={18}
-            color={styleState?.italic.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-        <ToolbarButton
-          accessibilityLabel="Underline"
-          active={styleState?.underline.isActive}
-          onPress={() =>
-            plainMarkdownActions?.underline() ??
-            editorRef.current?.toggleUnderline()
-          }>
-          <Underline
-            size={18}
-            color={styleState?.underline.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
-        </ToolbarButton>
-        <ToolbarButton
-          accessibilityLabel="Strikethrough"
-          active={styleState?.strikethrough.isActive}
-          onPress={() =>
-            plainMarkdownActions?.strikethrough() ??
-            editorRef.current?.toggleStrikethrough()
-          }>
-          <Strikethrough
-            size={18}
-            color={styleState?.strikethrough.isActive ? "#f8fafc" : "#a1a1aa"}
-          />
+          active={boldActive}
+          onPress={onToggleBold}>
+          <Bold size={18} color={boldActive ? "#f8fafc" : "#a1a1aa"} />
         </ToolbarButton>
       </View>
     </View>
