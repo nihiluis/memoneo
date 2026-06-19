@@ -1,5 +1,11 @@
 # @memoneo/app
 
+## 1.0.2
+
+### Patch Changes
+
+- 91e4df3: app fixes
+
 ## 1.0.1
 
 ### Patch Changes
