@@ -31,7 +31,9 @@ export function NoteHeader({
       : "rgba(148, 163, 184, 0.36)"
 
   return (
-    <View className="h-14 flex-row items-center border-b border-border px-4">
+    <View
+      className="h-14 flex-row items-center border-b border-border bg-background px-4"
+      style={styles.header}>
       <Pressable
         accessibilityRole="button"
         className="mr-3 h-10 w-10 items-center justify-center rounded-md"
@@ -86,6 +88,11 @@ export function NoteHeader({
 }
 
 const styles = StyleSheet.create({
+  header: {
+    elevation: 2,
+    position: "relative",
+    zIndex: 2,
+  },
   saveButton: {
     transform: [{ scale: 1 }],
   },
