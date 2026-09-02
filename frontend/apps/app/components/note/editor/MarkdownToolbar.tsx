@@ -1,24 +1,29 @@
 import { Bold } from "lucide-react-native"
-import { StyleSheet, View } from "react-native"
+import { StyleSheet, View, type LayoutChangeEvent } from "react-native"
 
 import { ToolbarButton } from "./ToolbarButton"
+import { MARKDOWN_TOOLBAR_GAP } from "./editorInsets"
 
 type MarkdownToolbarProps = {
   boldActive?: boolean
   bottomInset: number
+  onLayout?: (event: LayoutChangeEvent) => void
   onToggleBold: () => void
 }
 
 export function MarkdownToolbar({
   boldActive,
   bottomInset,
+  onLayout,
   onToggleBold,
 }: MarkdownToolbarProps) {
   return (
     <View
       className="px-4"
+      onLayout={onLayout}
       pointerEvents="box-none"
-      style={[styles.toolbar, { bottom: bottomInset + TOOLBAR_GAP }]}>
+      style={[styles.toolbar, { bottom: bottomInset + MARKDOWN_TOOLBAR_GAP }]}
+    >
       <View className="flex-row items-center justify-center gap-1 rounded-full bg-muted px-4 py-2">
         <ToolbarButton
           accessibilityLabel="Bold"
@@ -30,8 +35,6 @@ export function MarkdownToolbar({
     </View>
   )
 }
-
-const TOOLBAR_GAP = 12
 
 const styles = StyleSheet.create({
   toolbar: {

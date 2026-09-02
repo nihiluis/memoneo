@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   type NativeSyntheticEvent,
+  type LayoutChangeEvent,
   type TextInputScrollEvent,
   type TextInputSelectionChangeEventData,
   View,
@@ -29,6 +30,7 @@ import {
 } from "./boldMarkdown"
 import { normalizeNoteBody } from "./markdownInputMode"
 import { MarkdownToolbar } from "./MarkdownToolbar"
+import { getEditorBottomPadding } from "./editorInsets"
 
 type NoteEditorBodyProps = {
   defaultBody: string
@@ -78,6 +80,7 @@ function NoteEditorBodyComponent({
   const [body, setBody] = useState(normalizedDefaultBody)
   const [boldActive, setBoldActive] = useState(false)
   const [scrollY, setScrollY] = useState(0)
+  const [toolbarHeight, setToolbarHeight] = useState(0)
   const boldSegments = useMemo(() => parseBoldMarkdownSegments(body), [body])
 
   useEffect(() => {
@@ -130,6 +133,15 @@ function NoteEditorBodyComponent({
     setScrollY(event.nativeEvent.contentOffset.y)
   }, [])
 
+  const handleToolbarLayout = useCallback((event: LayoutChangeEvent) => {
+    const nextToolbarHeight = Math.ceil(event.nativeEvent.layout.height)
+    setToolbarHeight(currentToolbarHeight =>
+      currentToolbarHeight === nextToolbarHeight
+        ? currentToolbarHeight
+        : nextToolbarHeight,
+    )
+  }, [])
+
   const handleToggleBold = useCallback(() => {
     const result = toggleBoldMarkdown(currentBodyRef.current, selectionRef.current)
     currentBodyRef.current = result.body
@@ -154,9 +166,10 @@ function NoteEditorBodyComponent({
       styles.input,
       {
         color: editorTextColor,
+        paddingBottom: getEditorBottomPadding(toolbarHeight, insets.bottom),
       },
     ],
-    [editorTextColor],
+    [editorTextColor, insets.bottom, toolbarHeight],
   )
 
   return (
@@ -203,6 +216,7 @@ function NoteEditorBodyComponent({
         <MarkdownToolbar
           boldActive={boldActive}
           bottomInset={insets.bottom}
+          onLayout={handleToolbarLayout}
           onToggleBold={handleToggleBold}
         />
       </View>
