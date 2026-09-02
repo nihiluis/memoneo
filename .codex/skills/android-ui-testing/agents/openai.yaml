@@ -1,0 +1,4 @@
+interface:
+  display_name: "Android UI Testing"
+  short_description: "Test Android apps with agent-device"
+  default_prompt: "Use $android-ui-testing to test this Android app with agent-device and verify the requested UI behavior."
