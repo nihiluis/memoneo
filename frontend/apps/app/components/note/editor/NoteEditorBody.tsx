@@ -164,7 +164,7 @@ function NoteEditorBodyComponent({
       behavior="padding"
       className="flex-1"
       keyboardVerticalOffset={0}>
-      <View className="flex-1">
+      <View className="flex-1" style={styles.editorViewport}>
         <Text
           pointerEvents="none"
           style={[
@@ -229,12 +229,18 @@ const styles = StyleSheet.create({
   input: {
     zIndex: 1,
   },
+  editorViewport: {
+    overflow: "hidden",
+  },
   preview: {
     position: "absolute",
     top: 0,
     right: 0,
-    bottom: 0,
     left: 0,
+    // Keep the complete preview laid out so translating it follows the
+    // native TextInput's scroll position instead of translating a clipped
+    // viewport that no longer contains the lower lines.
+    flex: 0,
     zIndex: 0,
   },
   boldText: {
