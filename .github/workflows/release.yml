@@ -21,7 +21,7 @@ permissions:
 
 env:
   NODE_VERSION: "24"
-  GO_VERSION: "1.23"
+  GO_VERSION: "1.27.1"
   GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
 
 jobs:

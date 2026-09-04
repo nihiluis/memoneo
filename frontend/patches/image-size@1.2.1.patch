@@ -1,0 +1,34 @@
+diff --git a/dist/types/icns.js b/dist/types/icns.js
+index f2bfafef3723cb423b110304815e56e3f97f81e0..258c285687a89a66dc091c2dacf1c1f9f024a84e 100644
+--- a/dist/types/icns.js
++++ b/dist/types/icns.js
+@@ -93,7 +93,11 @@ exports.ICNS = {
+         while (imageOffset < fileLength && imageOffset < inputLength) {
+             imageHeader = readImageHeader(input, imageOffset);
+             imageSize = getImageSize(imageHeader[0]);
+-            imageOffset += imageHeader[1];
++            const imageLength = imageHeader[1];
++            if (imageLength < 8 || imageOffset + imageLength <= imageOffset) {
++                throw new TypeError('Invalid ICNS, entry length must advance the parser');
++            }
++            imageOffset += imageLength;
+             result.images.push(imageSize);
+         }
+         return result;
+diff --git a/dist/types/jxl.js b/dist/types/jxl.js
+index f557b0aea7e679d2cb84d9915e957dd2254eba97..7400135ce1e0b8c235afe18d3a1bde724158f32b 100644
+--- a/dist/types/jxl.js
++++ b/dist/types/jxl.js
+@@ -24,7 +24,11 @@ function extractPartialStreams(input) {
+         if (!jxlpBox)
+             break;
+         partialStreams.push(input.slice(jxlpBox.offset + 12, jxlpBox.offset + jxlpBox.size));
+-        offset = jxlpBox.offset + jxlpBox.size;
++        const nextOffset = jxlpBox.offset + jxlpBox.size;
++        if (nextOffset <= offset) {
++            throw new TypeError('Invalid JXL container, box length must advance the parser');
++        }
++        offset = nextOffset;
+     }
+     return partialStreams;
+ }
