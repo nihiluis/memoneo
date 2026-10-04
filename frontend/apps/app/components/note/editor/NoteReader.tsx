@@ -16,21 +16,12 @@ import {
 
 import { NoteEditorBody } from "./NoteEditorBody"
 import { NoteHeader } from "./NoteHeader"
+import { isDraftDirty, type DraftSnapshot } from "./draftSnapshot"
 import { normalizeNoteBody } from "./markdownInputMode"
-
-type DraftSnapshot = {
-  noteId: string
-  title: string
-  body: string
-}
 
 type SaveVariables = {
   note: Note
   draft: DraftSnapshot
-}
-
-function draftsEqual(a: DraftSnapshot, b: DraftSnapshot) {
-  return a.noteId === b.noteId && a.title === b.title && a.body === b.body
 }
 
 export function NoteReader() {
@@ -38,12 +29,30 @@ export function NoteReader() {
   const note = useAtomValue(selectedNoteAtom)
 
   const [title, setTitle] = useState("")
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const noteRef = useRef<Note | null>(null)
   const titleRef = useRef("")
   const bodyRef = useRef("")
+  const savedDraftRef = useRef<DraftSnapshot | null>(null)
   const hydratedNoteIdRef = useRef<string | null>(null)
   const queryClient = useQueryClient()
   const setSelectedNoteId = useSetAtom(selectedNoteIdAtom)
+
+  const updateUnsavedChanges = useCallback(() => {
+    const currentNote = noteRef.current
+    const savedDraft = savedDraftRef.current
+    const currentDraft = currentNote
+      ? {
+          noteId: currentNote.id,
+          title: titleRef.current,
+          body: bodyRef.current,
+        }
+      : null
+    const nextHasUnsavedChanges = isDraftDirty(savedDraft, currentDraft)
+    setHasUnsavedChanges(current =>
+      current === nextHasUnsavedChanges ? current : nextHasUnsavedChanges,
+    )
+  }, [])
 
   const saveNoteMutation = useMutation({
     mutationFn: async ({ note: currentNote, draft }: SaveVariables) => {
@@ -85,7 +94,7 @@ export function NoteReader() {
         // Only sync local title/body if the user hasn't edited since this save.
         if (
           currentDraft &&
-          draftsEqual(currentDraft, result.draft) &&
+          !isDraftDirty(result.draft, currentDraft) &&
           n?.id === "unsaved"
         ) {
           bodyRef.current = result.note.body
@@ -93,7 +102,11 @@ export function NoteReader() {
           setTitle(result.note.title)
         }
         setSelectedNoteId(result.note.id)
+        return
       }
+
+      savedDraftRef.current = result.draft
+      updateUnsavedChanges()
     },
     onError: error => {
       Alert.alert(
@@ -126,11 +139,13 @@ export function NoteReader() {
   const handleChangeTitle = useCallback((nextTitle: string) => {
     setTitle(nextTitle)
     titleRef.current = nextTitle
-  }, [])
+    updateUnsavedChanges()
+  }, [updateUnsavedChanges])
 
   const handleBodyChange = useCallback((nextBody: string) => {
     bodyRef.current = normalizeNoteBody(nextBody)
-  }, [])
+    updateUnsavedChanges()
+  }, [updateUnsavedChanges])
 
   // When the selected note (or its id) changes: sync refs, reset draft/saved snapshots,
   // and hydrate title/body/style from the server note. Same id + new object only updates noteRef.
@@ -149,6 +164,10 @@ export function NoteReader() {
 
     titleRef.current = nextTitle
     bodyRef.current = nextBody
+    savedDraftRef.current = note
+      ? { noteId: note.id, title: nextTitle, body: nextBody }
+      : null
+    setHasUnsavedChanges(false)
     setTitle(nextTitle)
   }, [note])
 
@@ -156,6 +175,7 @@ export function NoteReader() {
     <View className="flex-1">
       <NoteHeader
         note={note}
+        hasUnsavedChanges={hasUnsavedChanges}
         saveDisabled={!note || isSaving}
         title={title}
         onChangeTitle={handleChangeTitle}
