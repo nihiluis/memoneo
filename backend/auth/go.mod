@@ -14,8 +14,8 @@ require (
 	github.com/labstack/echo/v4 v4.15.4
 	github.com/swaggo/echo-swagger v1.5.2
 	github.com/swaggo/swag/v2 v2.0.0-rc4
-	github.com/uptrace/bun v1.2.15
-	github.com/uptrace/bun/dialect/pgdialect v1.2.15
+	github.com/uptrace/bun v1.3.0
+	github.com/uptrace/bun/dialect/pgdialect v1.3.0
 	github.com/uptrace/bun/driver/pgdriver v1.2.15
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.56.0
