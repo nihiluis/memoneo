@@ -25,9 +25,10 @@ export function DrawerAction({
       onPress={onPress}
       className={`flex-1 items-center gap-1.5 rounded-md px-1 py-2.5 ${
         disabled ? "opacity-50" : ""
-      }`}>
+      }`}
+    >
       {icon}
-      <MText className="text-center text-xs font-medium text-zinc-300">
+      <MText className="text-center text-xs font-medium text-muted-foreground">
         {label}
       </MText>
     </Pressable>

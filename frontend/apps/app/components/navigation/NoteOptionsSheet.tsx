@@ -6,7 +6,7 @@ import { MText } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
 import type { SingleNoteSyncAction } from "@/lib/notes/sync"
 
-type NoteOptionsSheetProps = {
+export type NoteOptionsSheetProps = {
   isDeleting: boolean
   isSyncing: boolean
   lastSync?: string
@@ -60,7 +60,8 @@ export function NoteOptionsSheet({
           className={cn(
             "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
             (!canSync || isSyncing) && "opacity-50"
-          )}>
+          )}
+        >
           <Upload size={18} color="#a1a1aa" />
           <MText className="text-[15px] font-bold text-zinc-100">
             {isSyncing ? "Syncing..." : "Upload note"}
@@ -74,7 +75,8 @@ export function NoteOptionsSheet({
           className={cn(
             "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
             (!canSync || isSyncing) && "opacity-50"
-          )}>
+          )}
+        >
           <RefreshCw size={18} color="#a1a1aa" />
           <MText className="text-[15px] font-bold text-zinc-100">
             {isSyncing ? "Syncing..." : "Sync note"}
@@ -89,7 +91,8 @@ export function NoteOptionsSheet({
         className={cn(
           "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-red-900 px-3.5",
           (!canDelete || isDeleting) && "opacity-50"
-        )}>
+        )}
+      >
         <Trash2 size={18} color="#f87171" />
         <MText className="text-[15px] font-bold text-red-400">
           {isDeleting ? "Deleting..." : "Delete note"}

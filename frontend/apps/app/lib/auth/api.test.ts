@@ -28,6 +28,7 @@ describe("auth api", () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    createAndStoreKey.mockReset()
   })
 
   it("checks an existing token and returns auth data", async () => {
@@ -66,7 +67,9 @@ describe("auth api", () => {
     })
     const { apiLogin } = await import("./api")
 
-    await expect(apiLogin("pablo@example.com", "password")).resolves.toMatchObject({
+    await expect(
+      apiLogin("pablo@example.com", "password")
+    ).resolves.toMatchObject({
       success: true,
       token: "token",
       userId: "user-1",
@@ -74,11 +77,32 @@ describe("auth api", () => {
     expect(createAndStoreKey).toHaveBeenCalledWith("password", "key", "salt")
   })
 
+  it("does not authenticate when the encryption key cannot be unlocked", async () => {
+    mockedAxios.post.mockResolvedValue({
+      data: {
+        token: "token",
+        userId: "user-1",
+        enckey: { key: "key", salt: "salt" },
+      },
+    })
+    createAndStoreKey.mockRejectedValue(new Error("wrong key"))
+    const { apiLogin } = await import("./api")
+    await expect(
+      apiLogin("pablo@example.com", "password")
+    ).resolves.toMatchObject({
+      success: false,
+      token: "",
+      errorMessage: expect.stringContaining("unlock"),
+    })
+  })
+
   it("returns a failed result when login fails", async () => {
     mockedAxios.post.mockRejectedValue(new Error("network down"))
     const { apiLogin } = await import("./api")
 
-    await expect(apiLogin("pablo@example.com", "password")).resolves.toMatchObject({
+    await expect(
+      apiLogin("pablo@example.com", "password")
+    ).resolves.toMatchObject({
       success: false,
       token: "",
       errorMessage: "network down",

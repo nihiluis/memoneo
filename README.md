@@ -3,7 +3,7 @@
 Memoneo is a self-hosted notes stack with:
 
 - a CLI to encrypt and sync markdown notes
-- an Android app for transcribed voice notes
+- Android and web apps for markdown notes and transcribed voice notes
 - backend services for auth and note APIs
 
 ## Project structure
@@ -11,7 +11,7 @@ Memoneo is a self-hosted notes stack with:
 ### Frontend packages
 
 - [Memoneo CLI](./frontend/apps/cli/README.md) - local markdown workflow and sync client
-- [Memoneo app](./frontend/apps/app/README.md) - Android app for recording and syncing voice notes
+- [Memoneo app](./frontend/apps/app/README.md) - Android and web apps for editing notes, recording voice notes, and encrypted sync
 - `@memoneo/shared` - shared frontend package used by the app and CLI
 
 ### Backend services

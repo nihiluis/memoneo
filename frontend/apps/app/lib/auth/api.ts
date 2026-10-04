@@ -112,7 +112,14 @@ export async function apiLogin(
         savedEnckey.salt
       )
     } catch (error) {
-      console.error("Failed to create and store key", error)
+      return {
+        success: false,
+        token: "",
+        userId: "",
+        mail,
+        errorMessage:
+          "Could not unlock your encryption key. Check your password and try again.",
+      }
     }
   }
 

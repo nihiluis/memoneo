@@ -11,7 +11,7 @@ import { StatusBar } from "expo-status-bar"
 import * as SystemUI from "expo-system-ui"
 import { useEffect } from "react"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
-import { KeyboardProvider } from "react-native-keyboard-controller"
+import { KeyboardShell } from "@/components/ui/KeyboardShell"
 import "react-native-reanimated"
 import "@/global.css"
 
@@ -60,7 +60,8 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView
-      style={{ backgroundColor: themeColors.background, flex: 1 }}>
+      style={{ backgroundColor: themeColors.background, flex: 1 }}
+    >
       <ThemeProvider
         value={{
           ...navigationTheme,
@@ -68,8 +69,9 @@ export default function RootLayout() {
             ...navigationTheme.colors,
             background: themeColors.background,
           },
-        }}>
-        <KeyboardProvider>
+        }}
+      >
+        <KeyboardShell>
           <QueryClientProvider client={queryClient}>
             <SetupProvider>
               <AuthProvider>
@@ -83,7 +85,7 @@ export default function RootLayout() {
               </AuthProvider>
             </SetupProvider>
           </QueryClientProvider>
-        </KeyboardProvider>
+        </KeyboardShell>
         <StatusBar
           backgroundColor={themeColors.background}
           style={themeColors.statusBarStyle}

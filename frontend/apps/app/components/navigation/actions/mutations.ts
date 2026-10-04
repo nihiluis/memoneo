@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter, useSegments } from "expo-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useRef } from "react"
-import { Alert } from "react-native"
+import { Alert } from "@/lib/alert"
 
 import { authAtom, tokenAtom } from "@/lib/auth/state"
 import { createLocalFolder, createLocalNote } from "@/lib/notes/local"
@@ -18,7 +18,11 @@ import {
   selectedNoteIdAtom,
   useNotesState,
 } from "@/lib/notes/state"
-import { downloadRemoteNotes, syncNotes, uploadLocalNotes } from "@/lib/notes/sync"
+import {
+  downloadRemoteNotes,
+  syncNotes,
+  uploadLocalNotes,
+} from "@/lib/notes/sync"
 
 import { useAppDrawer } from "../appDrawerContext"
 import { getFolderPathFromId, getNoteFolderId, setsAreEqual } from "../noteTree"
@@ -65,10 +69,12 @@ export function useCreateFolderDrawerMutation() {
     mutationFn: async (folderId: string) =>
       createLocalFolder(getFolderPathFromId(folderId)),
     onSuccess: async folderId => {
-      queryClient.setQueryData<string[]>(NOTES_FOLDERS_QUERY_KEY, (current: string[] | undefined) =>
-        [...new Set([...(current ?? []), folderId])].sort((a, b) =>
-          a.localeCompare(b)
-        )
+      queryClient.setQueryData<string[]>(
+        NOTES_FOLDERS_QUERY_KEY,
+        (current: string[] | undefined) =>
+          [...new Set([...(current ?? []), folderId])].sort((a, b) =>
+            a.localeCompare(b)
+          )
       )
       await queryClient.invalidateQueries({ queryKey: NOTES_FOLDERS_QUERY_KEY })
       setSelectedFolderId(folderId)

@@ -1,5 +1,10 @@
 import * as React from "react"
-import { Pressable, type PressableProps, Text, type TextProps } from "react-native"
+import {
+  Pressable,
+  type PressableProps,
+  Text,
+  type TextProps,
+} from "react-native"
 import { TextClassContext } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
 
@@ -73,6 +78,7 @@ const Button = React.forwardRef<
     return (
       <Pressable
         ref={ref}
+        accessibilityRole="button"
         disabled={isButtonDisabled}
         className={cn(
           "items-center justify-center rounded-md flex-row gap-2",
@@ -81,7 +87,8 @@ const Button = React.forwardRef<
           isButtonDisabled && "opacity-50 web:cursor-not-allowed",
           className
         )}
-        {...props}>
+        {...props}
+      >
         {typeof children === "function" ? (
           state => (
             <TextClassContext.Provider value={labelClassName}>

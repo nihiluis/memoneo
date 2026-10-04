@@ -12,9 +12,11 @@ export default function RecordsScreen() {
     <SafeAreaView className="flex-1 bg-background">
       <View className="h-14 flex-row items-center border-b border-border px-4">
         <Pressable
+          accessibilityLabel="Open navigation"
           accessibilityRole="button"
           className="mr-3 h-10 w-10 items-center justify-center rounded-md"
-          onPress={openDrawer}>
+          onPress={openDrawer}
+        >
           <Menu size={24} color="#a1a1aa" />
         </Pressable>
         <MText className="flex-1 text-lg font-semibold">Records</MText>

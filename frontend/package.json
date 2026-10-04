@@ -6,6 +6,7 @@
   "scripts": {
     "app": "pnpm --filter @memoneo/app",
     "cli": "pnpm --filter @memoneo/cli",
+    "build:app:web": "pnpm --filter @memoneo/app build:web",
     "build:cli": "pnpm --filter @memoneo/cli build",
     "build:app:android": "cd apps/app/android && NODE_ENV=production GRADLE_USER_HOME=.cache/gradle ./gradlew assembleRelease",
     "lint:app": "pnpm --filter @memoneo/app lint",

@@ -37,6 +37,14 @@ export default function LoginScreen() {
   const [auth, setAuth] = useAtom(authAtom)
   const mutation = useMutation({
     mutationFn: (data: LoginFormData) => apiLogin(data.mail, data.password),
+    onError: error => {
+      setAuth(current => ({
+        ...current,
+        isLoading: false,
+        isAuthenticated: false,
+        error: error instanceof Error ? error.message : "Sign in failed.",
+      }))
+    },
     onSuccess: data => {
       setAuth({
         isAuthenticated: data.success,
@@ -68,7 +76,7 @@ export default function LoginScreen() {
           headerShown: false,
         }}
       />
-      <View className="">
+      <View className="w-full max-w-md self-center">
         <View className="mb-8">
           <View className="items-center mb-4">
             <Logo width={128} height={128} />

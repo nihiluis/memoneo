@@ -1,13 +1,18 @@
+import { Alert } from "@/lib/alert"
 import type { Note } from "@memoneo/shared"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ActivityIndicator, Alert, View } from "react-native"
+import { ActivityIndicator, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { createLocalNote, writeLocalNote } from "@/lib/notes/local"
 import { upsertNoteInLocalQueryCache } from "@/lib/notes/query"
-import { selectedNoteAtom, selectedNoteIdAtom, useNotesState } from "@/lib/notes/state"
+import {
+  selectedNoteAtom,
+  selectedNoteIdAtom,
+  useNotesState,
+} from "@/lib/notes/state"
 
 import { NoteEditorBody } from "./NoteEditorBody"
 import { NoteHeader } from "./NoteHeader"

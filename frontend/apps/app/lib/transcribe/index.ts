@@ -1,3 +1,4 @@
+import { uploadRecording } from "./upload"
 import axios from "axios"
 import { z } from "zod"
 
@@ -27,21 +28,7 @@ export async function queueTranscription(
   id: string,
   fileUri: string
 ): Promise<string> {
-  const formData = new FormData()
-  // @ts-ignore Typing seems to be wrong here, seems to work like this.
-  formData.append("file", {
-    name: "recording.m4a",
-    uri: fileUri,
-    type: "audio/x-m4a",
-  })
-
-  const url = `${process.env.EXPO_PUBLIC_TRANSCRIBE_BASE_URL}/transcribe/${id}`
-  const response = await axios.post(url, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-    timeout: 1000,
-  })
+  const response = await uploadRecording(id, fileUri)
 
   console.log("queueTranscription response", response.data)
   const result = TranscriptionResponseSchema.parse(response.data)

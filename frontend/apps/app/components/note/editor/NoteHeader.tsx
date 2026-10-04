@@ -1,6 +1,7 @@
+import { useEffect } from "react"
 import type { Note } from "@memoneo/shared"
 import { Menu, Save } from "lucide-react-native"
-import { Pressable, StyleSheet, TextInput, View } from "react-native"
+import { Platform, Pressable, StyleSheet, TextInput, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
@@ -21,6 +22,17 @@ export function NoteHeader({
   onSave,
   saveDisabled = false,
 }: NoteHeaderProps) {
+  useEffect(() => {
+    if (Platform.OS !== "web") return
+    const save = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault()
+        if (!saveDisabled) onSave()
+      }
+    }
+    window.addEventListener("keydown", save)
+    return () => window.removeEventListener("keydown", save)
+  }, [onSave, saveDisabled])
   const { openDrawer } = useAppDrawer()
   const { colorScheme } = useColorScheme()
   const saveColor = saveDisabled ? "#52525b" : "#a1a1aa"
@@ -33,17 +45,21 @@ export function NoteHeader({
   return (
     <View
       className="h-14 flex-row items-center border-b border-border bg-background px-4"
-      style={styles.header}>
+      style={styles.header}
+    >
       <Pressable
+        accessibilityLabel="Open navigation"
         accessibilityRole="button"
         className="mr-3 h-10 w-10 items-center justify-center rounded-md"
-        onPress={openDrawer}>
+        onPress={openDrawer}
+      >
         <Menu size={24} color="#a1a1aa" />
       </Pressable>
       <TextInput
         autoComplete="off"
         autoCorrect={false}
-        className="flex-1 p-0 text-2xl font-semibold text-foreground"
+        className="min-w-0 flex-1 p-0 text-2xl font-semibold text-foreground"
+        style={{ flexShrink: 1 }}
         editable={!!note}
         onChangeText={onChangeTitle}
         placeholder="Untitled"
@@ -73,13 +89,15 @@ export function NoteHeader({
           styles.saveButton,
           saveDisabled && styles.saveButtonDisabled,
           pressed && !saveDisabled && styles.saveButtonPressed,
-        ]}>
+        ]}
+      >
         <Save size={20} color={saveColor} />
         <MText
           className={[
             "text-sm font-medium",
             saveDisabled ? "text-muted-foreground/50" : "text-muted-foreground",
-          ].join(" ")}>
+          ].join(" ")}
+        >
           Save
         </MText>
       </Pressable>

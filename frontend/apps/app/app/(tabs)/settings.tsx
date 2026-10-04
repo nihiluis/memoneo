@@ -1,3 +1,5 @@
+import { lockEncryption } from "@/lib/auth/lock"
+import { Alert } from "@/lib/alert"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
 import { Button } from "@/components/reusables/Button"
 import { MText } from "@/components/reusables/MText"
@@ -15,7 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "expo-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { Menu } from "lucide-react-native"
-import { Alert, Pressable, View } from "react-native"
+import { Pressable, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function SettingsScreen() {
@@ -29,6 +31,7 @@ export default function SettingsScreen() {
   const queryClient = useQueryClient()
 
   function signOff() {
+    lockEncryption()
     setToken("")
     setAuth({
       isAuthenticated: false,
@@ -56,7 +59,10 @@ export default function SettingsScreen() {
         queryClient.invalidateQueries({ queryKey: NOTES_LOCAL_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: NOTES_CACHE_QUERY_KEY }),
       ])
-      Alert.alert("Local data reset", "All local notes and sync cache were deleted.")
+      Alert.alert(
+        "Local data reset",
+        "All local notes and sync cache were deleted."
+      )
     },
     onError: error => {
       Alert.alert(
@@ -85,9 +91,11 @@ export default function SettingsScreen() {
     <SafeAreaView className="flex-1 bg-background">
       <View className="h-14 flex-row items-center border-b border-border px-4">
         <Pressable
+          accessibilityLabel="Open navigation"
           accessibilityRole="button"
           className="mr-3 h-10 w-10 items-center justify-center rounded-md"
-          onPress={openDrawer}>
+          onPress={openDrawer}
+        >
           <Menu size={24} color="#a1a1aa" />
         </Pressable>
         <MText className="flex-1 text-lg font-semibold">Settings</MText>
@@ -101,7 +109,8 @@ export default function SettingsScreen() {
           <Button
             size="lg"
             variant="ghost"
-            onPress={() => router.push("/auth/login")}>
+            onPress={() => router.push("/auth/login")}
+          >
             <MText>Sign in</MText>
           </Button>
         )}
@@ -111,7 +120,8 @@ export default function SettingsScreen() {
           isDisabled={resetLocalDataMutation.isPending}
           size="lg"
           variant="danger"
-          onPress={confirmResetLocalData}>
+          onPress={confirmResetLocalData}
+        >
           <MText>
             {resetLocalDataMutation.isPending
               ? "Deleting..."

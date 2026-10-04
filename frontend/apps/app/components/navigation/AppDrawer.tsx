@@ -1,3 +1,4 @@
+import { Alert } from "@/lib/alert"
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -9,8 +10,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAtom, useAtomValue } from "jotai"
 import type React from "react"
 import { useCallback, useRef, useState } from "react"
-import { Alert, Dimensions, StyleSheet } from "react-native"
+import {
+  Dimensions,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native"
 import { Drawer } from "react-native-drawer-layout"
+import { useColorScheme } from "@/hooks/useColorScheme"
 
 import { authAtom, tokenAtom } from "@/lib/auth/state"
 import { loadNoteCache } from "@/lib/notes/cache"
@@ -20,10 +28,7 @@ import {
   NOTES_FOLDERS_QUERY_KEY,
   NOTES_LOCAL_QUERY_KEY,
 } from "@/lib/notes/query"
-import {
-  selectedNoteIdAtom,
-  useNotesState,
-} from "@/lib/notes/state"
+import { selectedNoteIdAtom, useNotesState } from "@/lib/notes/state"
 import {
   syncLocalNote,
   uploadLocalNote,
@@ -33,6 +38,8 @@ import {
 
 import { AppDrawerContext } from "./appDrawerContext"
 import { DrawerContent } from "./DrawerContent"
+import { WebNoteOptionsDialog } from "./WebNoteOptionsDialog"
+import { WebFileActions } from "./WebFileActions"
 import { getNoteFileName, NoteOptionsSheet } from "./NoteOptionsSheet"
 
 export { useAppDrawer } from "./appDrawerContext"
@@ -41,6 +48,9 @@ const WINDOW_WIDTH = Dimensions.get("window").width
 const DRAWER_WIDTH = Math.min(340, WINDOW_WIDTH * 0.86)
 
 export function AppDrawer({ children }: { children: React.ReactNode }) {
+  const { width } = useWindowDimensions()
+  const { isDarkColorScheme } = useColorScheme()
+  const permanent = Platform.OS === "web" && width >= 900
   const queryClient = useQueryClient()
   const auth = useAtomValue(authAtom)
   const token = useAtomValue(tokenAtom)
@@ -73,6 +83,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
   }, [])
 
   const closeNoteOptions = useCallback(() => {
+    setOptionsNote(null)
     noteOptionsSheetRef.current?.dismiss()
   }, [])
 
@@ -87,7 +98,8 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         return
       }
 
-      const nextNoteId = notes.find(note => note.id !== deletedNote.id)?.id ?? ""
+      const nextNoteId =
+        notes.find(note => note.id !== deletedNote.id)?.id ?? ""
       setSelectedNoteId(nextNoteId)
     },
     onError: error => {
@@ -196,45 +208,69 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
 
   return (
     <AppDrawerContext.Provider
-      value={{ closeDrawer, drawerOpen, openDrawer }}>
+      value={{ closeDrawer, drawerOpen: permanent || drawerOpen, openDrawer }}
+    >
       <Drawer
         configureGestureHandler={gesture =>
           gesture.activeOffsetX([-10, 10]).failOffsetY([-12, 12])
         }
         drawerPosition="left"
-        drawerStyle={styles.drawer}
-        drawerType="front"
+        drawerStyle={[
+          styles.drawer,
+          {
+            width: Math.min(340, width * 0.86),
+            backgroundColor: isDarkColorScheme ? "#09090b" : "#ffffff",
+          },
+        ]}
+        drawerType={permanent ? "permanent" : "front"}
         onClose={closeDrawer}
         onOpen={openDrawer}
         open={drawerOpen}
         overlayStyle={styles.drawerOverlay}
         renderDrawerContent={() => (
-          <DrawerContent onOpenNoteOptions={openNoteOptions} />
+          <View style={styles.flex}>
+            <DrawerContent onOpenNoteOptions={openNoteOptions} />
+            <WebFileActions />
+          </View>
         )}
         swipeEdgeWidth={WINDOW_WIDTH}
-        swipeEnabled>
+        swipeEnabled={Platform.OS !== "web"}
+      >
         {children}
       </Drawer>
 
-      <BottomSheetModal
-        backdropComponent={renderBackdrop}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
-        ref={noteOptionsSheetRef}
-        snapPoints={["64%"]}>
-        <BottomSheetView style={styles.flex}>
-          {optionsNote && (
-            <NoteOptionsSheet
-              isDeleting={deleteNoteMutation.isPending}
-              isSyncing={singleNoteSyncMutation.isPending}
-              lastSync={lastSync}
-              note={optionsNote}
-              onDelete={confirmDeleteNote}
-              onSync={syncSingleNote}
-            />
-          )}
-        </BottomSheetView>
-      </BottomSheetModal>
+      {Platform.OS === "web" ? (
+        <WebNoteOptionsDialog
+          note={optionsNote}
+          onClose={closeNoteOptions}
+          isDeleting={deleteNoteMutation.isPending}
+          isSyncing={singleNoteSyncMutation.isPending}
+          lastSync={lastSync}
+          onDelete={confirmDeleteNote}
+          onSync={syncSingleNote}
+        />
+      ) : (
+        <BottomSheetModal
+          backdropComponent={renderBackdrop}
+          backgroundStyle={styles.sheetBackground}
+          handleIndicatorStyle={styles.sheetHandle}
+          ref={noteOptionsSheetRef}
+          snapPoints={["64%"]}
+        >
+          <BottomSheetView style={styles.flex}>
+            {optionsNote && (
+              <NoteOptionsSheet
+                isDeleting={deleteNoteMutation.isPending}
+                isSyncing={singleNoteSyncMutation.isPending}
+                lastSync={lastSync}
+                note={optionsNote}
+                onDelete={confirmDeleteNote}
+                onSync={syncSingleNote}
+              />
+            )}
+          </BottomSheetView>
+        </BottomSheetModal>
+      )}
     </AppDrawerContext.Provider>
   )
 }

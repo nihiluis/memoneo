@@ -1,5 +1,5 @@
 import { atom } from "jotai"
-import * as SecureStore from "expo-secure-store"
+import * as SecureStore from "./tokenStorage"
 import { Enckey } from "./api"
 
 interface AuthState {
