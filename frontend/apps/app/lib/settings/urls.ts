@@ -17,7 +17,11 @@ export function normalizeBackendUrl(value: string) {
 }
 
 export function getBackendUrls(): BackendUrls {
-  const defaults = { apiUrl: API_BASE_URL ?? "", authUrl: AUTH_BASE_URL ?? "" }
+  const origin = typeof window === "undefined" ? undefined : window.location?.origin
+  const defaults = {
+    apiUrl: API_BASE_URL || (origin ? `${origin}/api` : ""),
+    authUrl: AUTH_BASE_URL || (origin ? `${origin}/auth` : ""),
+  }
   try {
     if (typeof window === "undefined" || !window.localStorage) return defaults
     const stored = window.localStorage.getItem(STORAGE_KEY)

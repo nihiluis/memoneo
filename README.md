@@ -53,6 +53,7 @@ Published artifacts:
 - `auth`: release tarball, binary, and GHCR image
 - `cli`: standalone binaries for Linux, macOS, and Windows
 - `app`: Android APK
+- `web`: versioned GHCR image published from `web@vX.Y.Z` tags; see [web releases](./deploy/web/README.md)
 - `shared`: packed `.tgz` package
 
 Recommended checks before merging releaseable work:
