@@ -61,6 +61,9 @@ services:
     dns:
       - 1.1.1.1
       - 8.8.8.8
+    # Use TCP for DNS on hosts where outbound UDP is blocked.
+    dns_opt:
+      - use-vc
     environment:
       TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-memoneo}
       TS_AUTHKEY: ${TAILSCALE_AUTH_KEY:-}
