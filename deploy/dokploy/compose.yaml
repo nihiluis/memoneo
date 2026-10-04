@@ -1,0 +1,107 @@
+# Self-contained raw Compose configuration for Dokploy.
+# Use versioned release images for all services.
+services:
+  auth:
+    image: ${AUTH_IMAGE:-ghcr.io/nihiluis/memoneo-auth:v0.1.1}
+    environment:
+      PORT: "8089"
+      DATABASE_URL: ${DATABASE_URL:?Set the external PostgreSQL DATABASE_URL in Dokploy}
+      ALLOW_ORIGINS: ${APP_ORIGIN:?Set APP_ORIGIN in Dokploy}
+      AUTH_COOKIE_DOMAIN: ""
+      AUTH_JWT_KID: ${AUTH_KID:-memoneo-auth}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-memoneo-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-memoneo}
+      AUTH_JWT_SIGNING_KEY: ${AUTH_JWT_SIGNING_KEY:?Set AUTH_JWT_SIGNING_KEY in Dokploy}
+    restart: unless-stopped
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/nihiluis/memoneo-api:v1.0.1}
+    environment:
+      NODE_ENV: production
+      PORT: "8073"
+      DATABASE_URL: ${DATABASE_URL:?Set the external PostgreSQL DATABASE_URL in Dokploy}
+      AUTH_API_URL: http://auth:8089
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-memoneo-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-memoneo}
+      ALLOW_ORIGINS: ${APP_ORIGIN:?Set APP_ORIGIN in Dokploy}
+    command:
+      - sh
+      - -ec
+      - |
+        pnpm db:migrate
+        exec pnpm start
+    depends_on:
+      auth:
+        condition: service_started
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8073/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/nihiluis/memoneo-web:v1.0.0}
+    depends_on:
+      api:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1/]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  tailscale:
+    image: ${TAILSCALE_IMAGE:-tailscale/tailscale:stable@sha256:c507f3a2a6ab1cabd8d809b98edeb41edbd5c3fb6ad9632ffd098b4c7d0b4065}
+    # Docker retains service-name resolution and forwards public lookups here.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    # Use TCP for DNS on hosts where outbound UDP is blocked.
+    dns_opt:
+      - use-vc
+    environment:
+      TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-memoneo}
+      TS_AUTHKEY: ${TAILSCALE_AUTH_KEY:-}
+      TS_AUTH_ONCE: "true"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_ENABLE_HEALTH_CHECK: "true"
+      TS_LOCAL_ADDR_PORT: 127.0.0.1:9002
+      TS_BOOT_TIMEOUT: 10m
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+    configs:
+      - source: tailscale_serve
+        target: /config/serve.json
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:9002/healthz]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10m
+    restart: unless-stopped
+
+volumes:
+  tailscale_state:
+
+configs:
+  tailscale_serve:
+    content: |
+      {
+        "TCP": { "443": { "HTTPS": true } },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": { "/": { "Proxy": "http://web:80" } }
+          }
+        },
+        "AllowFunnel": { "$${TS_CERT_DOMAIN}:443": false }
+      }
