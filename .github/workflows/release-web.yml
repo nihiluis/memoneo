@@ -44,7 +44,8 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - run: pnpm test && pnpm typecheck && pnpm lint
+      # Typecheck builds the shared package required by the web tests.
+      - run: pnpm typecheck && pnpm test && pnpm lint
         working-directory: frontend
 
       - uses: docker/setup-qemu-action@v3
