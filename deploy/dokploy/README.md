@@ -8,9 +8,11 @@ No container publishes a host port.
 
 In the service's **Environment** tab, use `.env.example` and fill in:
 
+- `APP_ORIGIN`: the HTTPS origin assigned to your sidecar by Tailscale.
+  Use the actual hostname from your deployment; the URLs below are placeholders.
 - `DATABASE_URL`: your existing database URL, including credentials and database
   name, for example
-  `postgres://USER:URL_ENCODED_PASSWORD@100.108.216.27:5485/DB_NAME?sslmode=disable`.
+  `postgres://USER:URL_ENCODED_PASSWORD@DB_HOST:DB_PORT/DB_NAME?sslmode=disable`.
   URL-encode special characters in credentials. The Dokploy host and its
   containers must be able to reach this database address over Tailscale.
 - `AUTH_JWT_SIGNING_KEY`: a base64-encoded RSA private key. Generate one with
@@ -20,11 +22,12 @@ In the service's **Environment** tab, use `.env.example` and fill in:
   Without a key, open the authentication link printed in the sidecar logs once.
 
 Save and deploy. Authorize the sidecar in the intended tailnet if prompted.
-The default hostname is `memoneo`; its intended URL is:
+The default hostname is `memoneo`. Replace `YOUR_TAILNET` in these example URLs
+with the DNS name assigned by Tailscale:
 
-- Web: `https://memoneo.tail742bf.ts.net`
-- Notes API: `https://memoneo.tail742bf.ts.net/api`
-- Authentication: `https://memoneo.tail742bf.ts.net/auth`
+- Web: `https://memoneo.YOUR_TAILNET.ts.net`
+- Notes API: `https://memoneo.YOUR_TAILNET.ts.net/api`
+- Authentication: `https://memoneo.YOUR_TAILNET.ts.net/auth`
 
 If Tailscale assigns a different hostname because of a conflict, update
 `APP_ORIGIN` to the assigned HTTPS URL and redeploy. HTTPS must be enabled in the
@@ -47,4 +50,6 @@ startup, so use the intended Memoneo database and an authorized migration role.
 
 To update the app, change `WEB_IMAGE`, `API_IMAGE` or `AUTH_IMAGE` to another
 published release and redeploy. `TAILSCALE_IMAGE` can override the pinned stable
-Tailscale image. Keep database credentials and the signing key out of Git.
+Tailscale image. Keep actual tailnet hostnames, private database addresses,
+database credentials and the signing key in Dokploy's environment settings
+and out of Git.
