@@ -57,6 +57,10 @@ services:
 
   tailscale:
     image: ${TAILSCALE_IMAGE:-tailscale/tailscale:stable@sha256:c507f3a2a6ab1cabd8d809b98edeb41edbd5c3fb6ad9632ffd098b4c7d0b4065}
+    # Docker retains service-name resolution and forwards public lookups here.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-memoneo}
       TS_AUTHKEY: ${TAILSCALE_AUTH_KEY:-}
