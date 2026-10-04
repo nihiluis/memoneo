@@ -18,9 +18,10 @@ export function ToolbarButton({
     <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      accessibilityState={{ selected: !!active }}
       className={[
-        "h-10 w-10 items-center justify-center rounded-md",
-        active ? "bg-muted" : "bg-transparent",
+        "h-10 w-10 items-center justify-center rounded-full hover:bg-background focus:bg-background active:bg-background web:cursor-pointer",
+        active ? "bg-background" : "bg-transparent",
       ].join(" ")}
       onPress={onPress}>
       {children}

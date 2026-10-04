@@ -120,7 +120,7 @@ export default function LoginScreen() {
             }}
             error={errors.password?.message}
           />
-          {auth.error && <ErrorText>{auth.error}</ErrorText>}
+          {!!auth.error && <ErrorText>{auth.error}</ErrorText>}
         </View>
 
         <Button size="lg" onPress={handleSubmit(onSubmit)}>

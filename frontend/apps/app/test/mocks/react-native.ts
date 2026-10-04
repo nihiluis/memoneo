@@ -16,6 +16,7 @@ function host(type: string) {
 
 export const Text = host("Text")
 export const View = host("View")
+export const Modal = host("Modal")
 export const Pressable = host("Pressable")
 export const TextInput = host("TextInput")
 export const ScrollView = host("ScrollView")

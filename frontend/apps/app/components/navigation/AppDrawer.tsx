@@ -50,7 +50,9 @@ const DRAWER_WIDTH = Math.min(340, WINDOW_WIDTH * 0.86)
 export function AppDrawer({ children }: { children: React.ReactNode }) {
   const { width } = useWindowDimensions()
   const { isDarkColorScheme } = useColorScheme()
-  const permanent = Platform.OS === "web" && width >= 900
+  const wideWeb = Platform.OS === "web" && width >= 900
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const permanent = wideWeb && !sidebarCollapsed
   const queryClient = useQueryClient()
   const auth = useAtomValue(authAtom)
   const token = useAtomValue(tokenAtom)
@@ -74,8 +76,13 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
   }, [])
 
   const openDrawer = useCallback(() => {
-    setDrawerOpen(true)
-  }, [])
+    if (wideWeb) {
+      setSidebarCollapsed(collapsed => !collapsed)
+      setDrawerOpen(false)
+    } else {
+      setDrawerOpen(true)
+    }
+  }, [wideWeb])
 
   const openNoteOptions = useCallback((note: Note) => {
     setOptionsNote(note)
@@ -224,7 +231,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         ]}
         drawerType={permanent ? "permanent" : "front"}
         onClose={closeDrawer}
-        onOpen={openDrawer}
+        onOpen={() => setDrawerOpen(true)}
         open={drawerOpen}
         overlayStyle={styles.drawerOverlay}
         renderDrawerContent={() => (
@@ -243,6 +250,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
         <WebNoteOptionsDialog
           note={optionsNote}
           onClose={closeNoteOptions}
+          isAuthenticated={auth.isAuthenticated}
           isDeleting={deleteNoteMutation.isPending}
           isSyncing={singleNoteSyncMutation.isPending}
           lastSync={lastSync}
@@ -260,6 +268,7 @@ export function AppDrawer({ children }: { children: React.ReactNode }) {
           <BottomSheetView style={styles.flex}>
             {optionsNote && (
               <NoteOptionsSheet
+                isAuthenticated={auth.isAuthenticated}
                 isDeleting={deleteNoteMutation.isPending}
                 isSyncing={singleNoteSyncMutation.isPending}
                 lastSync={lastSync}

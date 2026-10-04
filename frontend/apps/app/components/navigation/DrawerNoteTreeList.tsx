@@ -47,6 +47,8 @@ function DrawerNoteTreeListComponent({
     drawerExpandedFolderIdsAtom
   )
 
+  const highlightedNoteId = isFocusedRouteNotesHome(segments) ? selectedNoteId : ""
+
   const notes = notesState.notes
   const folderPaths = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data])
   const noteTree = useMemo(() => {
@@ -141,7 +143,7 @@ function DrawerNoteTreeListComponent({
         onSelectNote={selectNote}
         onToggleFolder={toggleFolder}
         selectedFolderId={selectedFolderId}
-        selectedNoteId={selectedNoteId}
+        selectedNoteId={highlightedNoteId}
       />
     ),
     [
@@ -150,7 +152,7 @@ function DrawerNoteTreeListComponent({
       selectFolder,
       selectNote,
       selectedFolderId,
-      selectedNoteId,
+      highlightedNoteId,
       toggleFolder,
     ]
   )
@@ -159,9 +161,9 @@ function DrawerNoteTreeListComponent({
     () => ({
       expandedFolderIds,
       selectedFolderId,
-      selectedNoteId,
+      selectedNoteId: highlightedNoteId,
     }),
-    [expandedFolderIds, selectedFolderId, selectedNoteId]
+    [expandedFolderIds, selectedFolderId, highlightedNoteId]
   )
 
   const isLoading = notesState.isLoading || foldersQuery.isLoading

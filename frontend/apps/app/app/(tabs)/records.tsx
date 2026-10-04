@@ -14,7 +14,7 @@ export default function RecordsScreen() {
         <Pressable
           accessibilityLabel="Open navigation"
           accessibilityRole="button"
-          className="mr-3 h-10 w-10 items-center justify-center rounded-md"
+          className="mr-3 h-10 w-10 items-center justify-center rounded-md hover:bg-accent focus:bg-accent active:bg-accent web:cursor-pointer"
           onPress={openDrawer}
         >
           <Menu size={24} color="#a1a1aa" />

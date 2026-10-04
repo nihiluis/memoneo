@@ -19,12 +19,12 @@ export function MarkdownToolbar({
 }: MarkdownToolbarProps) {
   return (
     <View
-      className="px-4"
+      className="items-center px-4"
       onLayout={onLayout}
       pointerEvents="box-none"
       style={[styles.toolbar, { bottom: bottomInset + MARKDOWN_TOOLBAR_GAP }]}
     >
-      <View className="flex-row items-center justify-center gap-1 rounded-full bg-muted px-4 py-2">
+      <View className="flex-row items-center justify-center gap-1 rounded-full border border-border bg-muted px-4 py-2">
         <ToolbarButton
           accessibilityLabel="Bold"
           active={boldActive}

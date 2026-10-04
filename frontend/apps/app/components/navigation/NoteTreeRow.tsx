@@ -48,7 +48,7 @@ function NoteTreeRowComponent({
         <Pressable
           accessibilityLabel={expanded ? "Collapse folder" : "Expand folder"}
           accessibilityRole="button"
-          className="h-8 w-8 items-center justify-center"
+          className="h-8 w-8 items-center justify-center rounded-md hover:bg-zinc-500/25 focus:bg-zinc-500/25 active:bg-zinc-500/40 web:cursor-pointer"
           onPress={() => onToggleFolder(item.folder.id)}
         >
           <Chevron size={16} color="#a1a1aa" />
@@ -56,7 +56,7 @@ function NoteTreeRowComponent({
         <Pressable
           accessibilityRole="button"
           onPress={() => onSelectFolder(item.folder.id)}
-          className="min-h-8 flex-1 flex-row items-center gap-2 pr-2"
+          className="min-h-8 flex-1 flex-row items-center gap-2 rounded-md pr-2 hover:bg-zinc-500/25 focus:bg-zinc-500/25 active:bg-zinc-500/40 web:cursor-pointer"
         >
           <Folder size={18} color={selected ? "#f8fafc" : "#a1a1aa"} />
           <MText
@@ -76,39 +76,39 @@ function NoteTreeRowComponent({
   const selected = item.note.id === selectedNoteId
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      onLongPress={() => onOpenNoteOptions(item.note)}
-      onPress={() => onSelectNote(item.note.id)}
+    <View
       className={cn(
-        "min-h-10 flex-row items-center rounded-md px-2 py-2",
-        selected && "bg-muted"
+        "min-h-10 flex-row items-center rounded-md pr-2 web:hover:bg-zinc-500/25 web:focus-within:bg-zinc-500/25 web:active:bg-zinc-500/40",
+        selected && "bg-muted web:hover:bg-zinc-500/40 web:focus-within:bg-zinc-500/40"
       )}
       style={{ paddingLeft: getTreePadding(item.depth) }}
     >
-      <MText
-        numberOfLines={1}
-        className={cn(
-          "flex-1 text-foreground",
-          selected && "font-semibold text-foreground"
-        )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={getNoteTitle(item.note)}
+        accessibilityState={{ selected }}
+        onLongPress={() => onOpenNoteOptions(item.note)}
+        onPress={() => onSelectNote(item.note.id)}
+        className="min-h-10 flex-1 justify-center rounded-md py-2 web:cursor-pointer"
       >
-        {getNoteTitle(item.note)}
-      </MText>
+        <MText
+          numberOfLines={1}
+          className="text-foreground"
+        >
+          {getNoteTitle(item.note)}
+        </MText>
+      </Pressable>
       {Platform.OS === "web" && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Options for ${getNoteTitle(item.note)}`}
-          className="h-8 w-8 items-center justify-center"
-          onPress={event => {
-            event.stopPropagation()
-            onOpenNoteOptions(item.note)
-          }}
+          className="h-8 w-8 items-center justify-center rounded-md hover:opacity-80 focus:opacity-80 active:opacity-60 web:cursor-pointer"
+          onPress={() => onOpenNoteOptions(item.note)}
         >
           <Ellipsis size={18} color="#a1a1aa" />
         </Pressable>
       )}
-    </Pressable>
+    </View>
   )
 }
 

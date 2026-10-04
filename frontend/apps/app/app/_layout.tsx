@@ -19,22 +19,12 @@ import { useColorScheme } from "@/hooks/useColorScheme"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import AuthProvider from "@/components/auth/AuthProvider"
 import { SetupProvider } from "@/components/setup/SetupProvider"
+import { THEME_COLORS } from "@/constants/theme"
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
 
 const queryClient = new QueryClient()
-const THEME_COLORS = {
-  dark: {
-    background: "#09090b",
-    statusBarStyle: "light" as const,
-  },
-  light: {
-    background: "#ffffff",
-    statusBarStyle: "dark" as const,
-  },
-}
-
 export default function RootLayout() {
   const { colorScheme } = useColorScheme()
   const isDark = colorScheme === "dark"

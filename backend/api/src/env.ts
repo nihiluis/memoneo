@@ -17,3 +17,8 @@ export const AUTH_JWT_AUDIENCE = process.env.AUTH_JWT_AUDIENCE ?? "memoneo"
 export const PORT = process.env.PORT || 8073
 
 export const VERSION = "0.0.1"
+
+export const ALLOW_ORIGINS = (process.env.ALLOW_ORIGINS ?? "http://localhost:8081|http://localhost:8080")
+  .split("|")
+  .map(origin => origin.trim())
+  .filter(Boolean)

@@ -11,6 +11,7 @@ vi.mock("axios", () => ({
 }))
 
 vi.mock("@/constants/env", () => ({
+  API_BASE_URL: "https://api.test",
   AUTH_BASE_URL: "https://auth.test",
   CHECK_AUTH_PATH: "/check",
   LOGIN_PATH: "/login",

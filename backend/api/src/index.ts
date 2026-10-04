@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url"
 import { Elysia, t } from "elysia"
 import { openapi } from "@elysia/openapi"
 import { node } from "@elysiajs/node"
+import { cors } from "./cors.js"
 import { PORT } from "./env.js"
 import { verifyAuthorization } from "./auth.js"
 import { createLogger } from "./logger.js"
@@ -91,6 +92,7 @@ const requireUser = async (headers: Record<string, string | undefined>) => {
 }
 
 export const app = new Elysia({ adapter: node() })
+  .use(cors)
   .use(openapi({ path: "/openapi" }))
   .onError(({ code, error, request, set }) => {
     logger.error(

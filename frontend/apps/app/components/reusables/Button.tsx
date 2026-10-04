@@ -84,7 +84,9 @@ const Button = React.forwardRef<
           "items-center justify-center rounded-md flex-row gap-2",
           buttonVariants[variant],
           isIconOnly ? "aspect-square px-0" : buttonSizes[size],
-          isButtonDisabled && "opacity-50 web:cursor-not-allowed",
+          isButtonDisabled
+            ? "opacity-50 web:cursor-not-allowed"
+            : "hover:opacity-80 focus:opacity-80 active:opacity-70 web:cursor-pointer",
           className
         )}
         {...props}

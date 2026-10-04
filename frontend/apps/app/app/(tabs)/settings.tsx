@@ -16,8 +16,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "expo-router"
 import { useAtomValue, useSetAtom } from "jotai"
-import { Menu } from "lucide-react-native"
-import { Pressable, View } from "react-native"
+import { ChevronRight, Menu } from "lucide-react-native"
+import { Platform, Pressable, ScrollView, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function SettingsScreen() {
@@ -93,42 +93,55 @@ export default function SettingsScreen() {
         <Pressable
           accessibilityLabel="Open navigation"
           accessibilityRole="button"
-          className="mr-3 h-10 w-10 items-center justify-center rounded-md"
+          className="mr-3 h-10 w-10 items-center justify-center rounded-md hover:bg-accent focus:bg-accent active:bg-accent web:cursor-pointer"
           onPress={openDrawer}
         >
           <Menu size={24} color="#a1a1aa" />
         </Pressable>
         <MText className="flex-1 text-lg font-semibold">Settings</MText>
       </View>
-      <View className="mt-4 items-center border-t border-border pt-4">
-        {auth.isAuthenticated ? (
-          <Button size="lg" variant="ghost" onPress={signOff}>
-            <MText>Sign off</MText>
-          </Button>
-        ) : (
-          <Button
-            size="lg"
-            variant="ghost"
-            onPress={() => router.push("/auth/login")}
+      <ScrollView contentContainerClassName="pb-6">
+        {Platform.OS === "web" && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Backend connection"
+            className="mx-4 mt-4 min-h-14 flex-row items-center justify-between rounded-md border border-border p-4 hover:bg-accent focus:bg-accent active:bg-accent web:cursor-pointer"
+            onPress={() => router.push("/backend-settings")}
           >
-            <MText>Sign in</MText>
-          </Button>
+            <MText className="text-lg font-semibold">Backend connection</MText>
+            <ChevronRight size={20} color="#a1a1aa" />
+          </Pressable>
         )}
-      </View>
-      <View className="mt-4 items-center border-t border-border pt-4">
-        <Button
-          isDisabled={resetLocalDataMutation.isPending}
-          size="lg"
-          variant="danger"
-          onPress={confirmResetLocalData}
-        >
-          <MText>
-            {resetLocalDataMutation.isPending
-              ? "Deleting..."
-              : "Delete all notes and reset cache"}
-          </MText>
-        </Button>
-      </View>
+        <View className="mt-4 items-center border-t border-border pt-4">
+          {auth.isAuthenticated ? (
+            <Button size="lg" variant="ghost" onPress={signOff}>
+              <MText>Sign off</MText>
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              variant="ghost"
+              onPress={() => router.push("/auth/login")}
+            >
+              <MText>Sign in</MText>
+            </Button>
+          )}
+        </View>
+        <View className="mt-4 items-center border-t border-border pt-4">
+          <Button
+            isDisabled={resetLocalDataMutation.isPending}
+            size="lg"
+            variant="danger"
+            onPress={confirmResetLocalData}
+          >
+            <MText>
+              {resetLocalDataMutation.isPending
+                ? "Deleting..."
+                : "Delete all notes and reset cache"}
+            </MText>
+          </Button>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }

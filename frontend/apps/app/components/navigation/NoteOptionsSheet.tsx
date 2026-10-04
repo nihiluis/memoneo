@@ -6,7 +6,15 @@ import { MText } from "@/components/reusables/MText"
 import { cn } from "@/lib/reusables/utils"
 import type { SingleNoteSyncAction } from "@/lib/notes/sync"
 
+import { ExportNoteAction } from "./ExportNoteAction"
+import { getNoteFileName } from "./noteFileName"
+
+import { NoteDetailsTable } from "./NoteDetailsTable"
+
+export { getNoteFileName } from "./noteFileName"
+
 export type NoteOptionsSheetProps = {
+  isAuthenticated: boolean
   isDeleting: boolean
   isSyncing: boolean
   lastSync?: string
@@ -16,6 +24,7 @@ export type NoteOptionsSheetProps = {
 }
 
 export function NoteOptionsSheet({
+  isAuthenticated,
   isDeleting,
   isSyncing,
   lastSync,
@@ -28,7 +37,7 @@ export function NoteOptionsSheet({
 
   return (
     <View className="flex-1 gap-2 px-5 pb-6 pt-2">
-      <View className="flex-row items-center gap-0">
+      <View className="flex-row items-center gap-3">
         <FileText size={22} color="#fafafa" />
         <View className="min-w-0 flex-1 gap-0">
           <MText numberOfLines={1} className="text-xs text-zinc-400">
@@ -40,49 +49,47 @@ export function NoteOptionsSheet({
         </View>
       </View>
 
-      <View className="gap-1 pb-3.5">
-        <MText numberOfLines={1} className="text-xs text-zinc-400">
-          Created {formatDateTime(note.created_at)}
-        </MText>
-        <MText numberOfLines={1} className="text-xs text-zinc-400">
-          Modified {formatDateTime(note.updated_at)}
-        </MText>
-        <MText numberOfLines={1} className="text-xs text-zinc-400">
-          Last sync {lastSync ? formatDateTime(lastSync) : "Not synced"}
-        </MText>
-      </View>
+      <NoteDetailsTable note={note} lastSync={lastSync} />
 
-      <View className="gap-2">
-        <Pressable
-          accessibilityRole="button"
-          disabled={!canSync || isSyncing}
-          onPress={() => onSync(note, "upload")}
-          className={cn(
-            "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
-            (!canSync || isSyncing) && "opacity-50"
-          )}
-        >
-          <Upload size={18} color="#a1a1aa" />
-          <MText className="text-[15px] font-bold text-zinc-100">
-            {isSyncing ? "Syncing..." : "Upload note"}
-          </MText>
-        </Pressable>
+      {isAuthenticated && (
+        <View className="gap-2">
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canSync || isSyncing}
+            onPress={() => onSync(note, "upload")}
+            className={cn(
+              "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
+              !canSync || isSyncing
+                ? "opacity-50 web:cursor-not-allowed"
+                : "hover:bg-zinc-800 focus:bg-zinc-800 active:bg-zinc-700 web:cursor-pointer"
+            )}
+          >
+            <Upload size={18} color="#a1a1aa" />
+            <MText className="text-[15px] font-bold text-zinc-100">
+              {isSyncing ? "Syncing..." : "Upload note"}
+            </MText>
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          disabled={!canSync || isSyncing}
-          onPress={() => onSync(note, "sync")}
-          className={cn(
-            "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
-            (!canSync || isSyncing) && "opacity-50"
-          )}
-        >
-          <RefreshCw size={18} color="#a1a1aa" />
-          <MText className="text-[15px] font-bold text-zinc-100">
-            {isSyncing ? "Syncing..." : "Sync note"}
-          </MText>
-        </Pressable>
-      </View>
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canSync || isSyncing}
+            onPress={() => onSync(note, "sync")}
+            className={cn(
+              "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-zinc-700 px-3.5",
+              !canSync || isSyncing
+                ? "opacity-50 web:cursor-not-allowed"
+                : "hover:bg-zinc-800 focus:bg-zinc-800 active:bg-zinc-700 web:cursor-pointer"
+            )}
+          >
+            <RefreshCw size={18} color="#a1a1aa" />
+            <MText className="text-[15px] font-bold text-zinc-100">
+              {isSyncing ? "Syncing..." : "Sync note"}
+            </MText>
+          </Pressable>
+        </View>
+      )}
+
+      <ExportNoteAction note={note} />
 
       <Pressable
         accessibilityRole="button"
@@ -90,7 +97,9 @@ export function NoteOptionsSheet({
         onPress={() => onDelete(note)}
         className={cn(
           "min-h-12 flex-row items-center justify-center gap-2 rounded-md border border-red-900 px-3.5",
-          (!canDelete || isDeleting) && "opacity-50"
+          !canDelete || isDeleting
+            ? "opacity-50 web:cursor-not-allowed"
+            : "hover:bg-red-950 focus:bg-red-950 active:bg-red-900 web:cursor-pointer"
         )}
       >
         <Trash2 size={18} color="#f87171" />
@@ -102,26 +111,6 @@ export function NoteOptionsSheet({
   )
 }
 
-export function getNoteFileName(note: Note) {
-  return `${note.file?.title ?? (note.title || "Untitled")}.md`
-}
-
 function getNoteDirectory(note: Note) {
   return note.file?.path || "Unfiled"
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "Unknown"
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return "Unknown"
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date)
 }

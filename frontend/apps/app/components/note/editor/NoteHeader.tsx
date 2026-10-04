@@ -50,7 +50,7 @@ export function NoteHeader({
       <Pressable
         accessibilityLabel="Open navigation"
         accessibilityRole="button"
-        className="mr-3 h-10 w-10 items-center justify-center rounded-md"
+        className="mr-3 h-10 w-10 items-center justify-center rounded-md hover:bg-accent focus:bg-accent active:bg-accent web:cursor-pointer"
         onPress={openDrawer}
       >
         <Menu size={24} color="#a1a1aa" />
@@ -73,7 +73,10 @@ export function NoteHeader({
       <Pressable
         accessibilityLabel="Save note"
         accessibilityRole="button"
-        className="ml-2 h-10 flex-row items-center justify-center gap-1.5 rounded-md px-3"
+        className={[
+          "ml-2 h-10 flex-row items-center justify-center gap-1.5 rounded-md px-3",
+          !saveDisabled && "hover:bg-accent focus:bg-accent web:cursor-pointer",
+        ].filter(Boolean).join(" ")}
         disabled={saveDisabled}
         hitSlop={8}
         onPress={() => {

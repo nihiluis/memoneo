@@ -24,7 +24,9 @@ export function DrawerAction({
       disabled={isDisabled}
       onPress={onPress}
       className={`flex-1 items-center gap-1.5 rounded-md px-1 py-2.5 ${
-        disabled ? "opacity-50" : ""
+        isDisabled
+          ? "opacity-50 web:cursor-not-allowed"
+          : "hover:bg-accent focus:bg-accent active:bg-accent web:cursor-pointer"
       }`}
     >
       {icon}

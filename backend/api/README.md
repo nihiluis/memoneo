@@ -25,3 +25,11 @@ Database:
 pnpm db:generate
 pnpm db:migrate
 ```
+
+Browser connections:
+
+Set `ALLOW_ORIGINS` to a pipe-separated list of permitted web app origins.
+The default permits `http://localhost:8081` and `http://localhost:8080`.
+Configure the authentication service to allow the same web app origin.
+The web app can save its notes API and authentication base URLs in Settings
+and check both services before signing in.
