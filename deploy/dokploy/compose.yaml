@@ -43,9 +43,6 @@ services:
 
   web:
     image: ${WEB_IMAGE:-ghcr.io/nihiluis/memoneo-web:v1.0.0}
-    # Tailscale Serve terminates HTTPS and forwards to this loopback port.
-    ports:
-      - "127.0.0.1:${WEB_PORT:-18080}:80"
     depends_on:
       api:
         condition: service_healthy
@@ -58,3 +55,46 @@ services:
       retries: 5
     restart: unless-stopped
 
+  tailscale:
+    image: ${TAILSCALE_IMAGE:-tailscale/tailscale:stable@sha256:c507f3a2a6ab1cabd8d809b98edeb41edbd5c3fb6ad9632ffd098b4c7d0b4065}
+    environment:
+      TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-memoneo}
+      TS_AUTHKEY: ${TAILSCALE_AUTH_KEY:-}
+      TS_AUTH_ONCE: "true"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_ENABLE_HEALTH_CHECK: "true"
+      TS_LOCAL_ADDR_PORT: 127.0.0.1:9002
+      TS_BOOT_TIMEOUT: 10m
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+    configs:
+      - source: tailscale_serve
+        target: /config/serve.json
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:9002/healthz]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10m
+    restart: unless-stopped
+
+volumes:
+  tailscale_state:
+
+configs:
+  tailscale_serve:
+    content: |
+      {
+        "TCP": { "443": { "HTTPS": true } },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": { "/": { "Proxy": "http://web:80" } }
+          }
+        },
+        "AllowFunnel": { "$${TS_CERT_DOMAIN}:443": false }
+      }

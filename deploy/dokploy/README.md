@@ -1,51 +1,50 @@
 # Memoneo on Dokploy over Tailscale
 
 Use `compose.yaml` as a **raw Docker Compose** service. Web, API and auth use
-published GHCR images (`WEB_IMAGE`, `API_IMAGE` and `AUTH_IMAGE`) pinned to release
-versions. Both backend services connect to your external PostgreSQL database.
-The Dokploy host needs access to GHCR to pull the images.
+published GHCR images pinned to release versions. Both backend services connect
+to your external PostgreSQL database. A Tailscale sidecar automatically loads
+its Serve configuration and proxies private HTTPS on port 443 to `web:80`.
+No container publishes a host port.
 
-In the service's **Environment** tab, paste `.env.example` and fill in:
+In the service's **Environment** tab, use `.env.example` and fill in:
 
-- `DATABASE_URL`: your existing database connection URL, including its host,
-  port, database, credentials and TLS mode, for example
+- `DATABASE_URL`: your existing database URL, including credentials and database
+  name, for example
   `postgres://USER:URL_ENCODED_PASSWORD@100.108.216.27:5485/DB_NAME?sslmode=disable`.
-  URL-encode special characters in the username/password. Use the TLS mode
-  required by your database provider; this server uses `sslmode=disable`.
-  For a database reached over Tailscale,
-  use its Tailscale IP or full MagicDNS hostname and its PostgreSQL port.
-  The Dokploy host and its containers must be able to reach that address.
+  URL-encode special characters in credentials. The Dokploy host and its
+  containers must be able to reach this database address over Tailscale.
 - `AUTH_JWT_SIGNING_KEY`: a base64-encoded RSA private key. Generate one with
-  `openssl genrsa 2048 | openssl base64 -A`.
+  `openssl genrsa 2048 | openssl base64 -A`, or preserve the existing signing key.
+- `TAILSCALE_AUTH_KEY` (optional): an auth key from the Tailscale admin console
+  for automatic first login. Use a non-ephemeral key for this persistent app.
+  Without a key, open the authentication link printed in the sidecar logs once.
 
-Keep the signing key stable across redeployments. If using an existing Memoneo
-database, reuse its signing key. Both services use the same `DATABASE_URL`; no
-local database container or volume is created. Database migrations run on startup,
-so use the intended Memoneo database and a role authorized to apply its migrations.
+Save and deploy. Authorize the sidecar in the intended tailnet if prompted.
+The default hostname is `memoneo`; its intended URL is:
 
-The default origin is `https://my-k8s.tail742bf.ts.net:8443`. On the Dokploy host,
-check `tailscale serve status`, then add a dedicated HTTPS listener:
+- Web: `https://memoneo.tail742bf.ts.net`
+- Notes API: `https://memoneo.tail742bf.ts.net/api`
+- Authentication: `https://memoneo.tail742bf.ts.net/auth`
 
-```sh
-sudo tailscale serve --bg --https=8443 http://127.0.0.1:18080
-```
+If Tailscale assigns a different hostname because of a conflict, update
+`APP_ORIGIN` to the assigned HTTPS URL and redeploy. HTTPS must be enabled in the
+tailnet. Tailnet access rules control who can connect. Funnel is explicitly
+disabled. No host-level `tailscale serve` command is needed.
 
-Tailscale may prompt you to enable HTTPS in the tailnet admin console. This uses
-the existing server's Tailscale hostname and does not require a custom domain.
-Port 8443 must be allowed by your tailnet policy. The Compose web port binds only
-to loopback; auth and API have no published ports.
+The `tailscale_state` volume preserves the sidecar's identity across restarts
+and redeployments. `TS_AUTH_ONCE=true` prevents unnecessary re-authentication.
+Keep this volume when redeploying. An auth key's expiry does not delete an
+already enrolled device; device key expiry is a separate Tailscale setting.
+For unattended operation, configure device key expiry appropriately in the
+Tailscale admin console. Changes to the mounted Serve configuration take effect
+when the sidecar is recreated during deployment.
 
-Save the environment and click **Deploy**. Once the build finishes, open the
-origin from a device connected to Tailscale. The released web app uses the current browser origin to choose these defaults:
+The browser chooses its own current origin for backend requests, so the same
+released web image works with this hostname without rebuilding. Saved backend
+URLs in Settings take precedence; update them if you previously saved the old
+host URL. Auth uses host-only secure cookies. API and auth migrations run on
+startup, so use the intended Memoneo database and an authorized migration role.
 
-- Notes API: `https://my-k8s.tail742bf.ts.net:8443/api`
-- Authentication: `https://my-k8s.tail742bf.ts.net:8443/auth`
-
-The same URLs work in the installed app and CLI. Auth uses host-only secure
-cookies. The proxy serves web, API and auth from the same origin. The API runs its
-database migrations before starting; auth runs its migrations at startup.
-
-If you change `APP_ORIGIN`, redeploy to update the backend origin configuration.
-The same web image works with different hostnames and ports. To update the app,
-update `WEB_IMAGE`/`API_IMAGE`/`AUTH_IMAGE` to published release versions and redeploy. To stop this listener later,
-run `sudo tailscale serve --https=8443 off`; this leaves other Serve listeners intact.
+To update the app, change `WEB_IMAGE`, `API_IMAGE` or `AUTH_IMAGE` to another
+published release and redeploy. `TAILSCALE_IMAGE` can override the pinned stable
+Tailscale image. Keep database credentials and the signing key out of Git.
