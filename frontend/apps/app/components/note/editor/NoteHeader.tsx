@@ -2,13 +2,6 @@ import { useEffect } from "react"
 import type { Note } from "@memoneo/shared"
 import { Menu, Save } from "lucide-react-native"
 import { Platform, Pressable, StyleSheet, TextInput, View } from "react-native"
-import Animated, {
-  interpolateColor,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated"
-
 import { MText } from "@/components/reusables/MText"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
 import { useColorScheme } from "@/hooks/useColorScheme"
@@ -43,31 +36,6 @@ export function NoteHeader({
   }, [onSave, saveDisabled])
   const { openDrawer } = useAppDrawer()
   const { colorScheme } = useColorScheme()
-  const saveStatusProgress = useSharedValue(hasUnsavedChanges ? 0 : 1)
-  useEffect(() => {
-    saveStatusProgress.value = withTiming(hasUnsavedChanges ? 0 : 1, {
-      duration: 220,
-    })
-  }, [hasUnsavedChanges, saveStatusProgress])
-  const saveStatusStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      saveStatusProgress.value,
-      [0, 1],
-      ["#fee2e2", "#dbeafe"],
-    ),
-    borderColor: interpolateColor(
-      saveStatusProgress.value,
-      [0, 1],
-      ["#fecaca", "#bfdbfe"],
-    ),
-  }))
-  const saveStatusDotStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      saveStatusProgress.value,
-      [0, 1],
-      ["#f87171", "#3b82f6"],
-    ),
-  }))
   const saveColor = saveDisabled ? "#52525b" : "#a1a1aa"
   const cursorColor = "#94a3b8"
   const selectionColor =
@@ -103,19 +71,17 @@ export function NoteHeader({
         spellCheck={false}
         value={title}
       />
-      <Animated.View
+      <MText
         accessibilityLabel={hasUnsavedChanges ? "Unsaved changes" : "Saved"}
         accessibilityLiveRegion="polite"
         accessibilityRole="text"
-        className="mr-2 flex-row items-center justify-center rounded-full"
+        className="mr-2 text-xs font-medium"
+        numberOfLines={1}
         pointerEvents="none"
-        style={[styles.saveStatus, saveStatusStyle]}
+        style={{ color: hasUnsavedChanges ? "#f87171" : "#3b82f6" }}
       >
-        <Animated.View style={[styles.saveStatusDot, saveStatusDotStyle]} />
-        <MText className="text-xs font-medium text-foreground" numberOfLines={1}>
-          {hasUnsavedChanges ? "Unsaved changes" : "Saved"}
-        </MText>
-      </Animated.View>
+        {hasUnsavedChanges ? "Unsaved changes" : "Saved"}
+      </MText>
       <Pressable
         accessibilityLabel="Save note"
         accessibilityRole="button"
@@ -162,19 +128,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     transform: [{ scale: 1 }],
-  },
-  saveStatus: {
-    width: 124,
-    height: 28,
-    flexShrink: 0,
-    paddingHorizontal: 9,
-    borderWidth: 1,
-    gap: 6,
-  },
-  saveStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   saveButtonDisabled: {
     opacity: 0.4,
