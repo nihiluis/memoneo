@@ -75,6 +75,7 @@ function NoteEditorBodyComponent({
   const insets = useSafeAreaInsets()
   const editorColor = useThemeColor({}, "text")
   const currentBodyRef = useRef(normalizedDefaultBody)
+  const hydratedNoteIdRef = useRef(noteId)
   const inputRef = useRef<ElementRef<typeof TextInput>>(null)
   const selectionRef = useRef({ start: 0, end: 0 })
   const [body, setBody] = useState(normalizedDefaultBody)
@@ -95,6 +96,10 @@ function NoteEditorBodyComponent({
   }, [noteId])
 
   useEffect(() => {
+    // Saving updates the cached body for this note. Keep the live draft,
+    // cursor and scroll position, including edits made while saving.
+    if (hydratedNoteIdRef.current === noteId) return
+    hydratedNoteIdRef.current = noteId
     currentBodyRef.current = normalizedDefaultBody
     selectionRef.current = { start: 0, end: 0 }
     setBody(normalizedDefaultBody)
