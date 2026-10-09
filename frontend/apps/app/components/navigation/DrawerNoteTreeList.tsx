@@ -3,7 +3,7 @@ import type { Note } from "@memoneo/shared"
 import { useRouter, useSegments } from "expo-router"
 import { useAtom } from "jotai"
 import { memo, useCallback, useEffect, useMemo } from "react"
-import { StyleSheet, View } from "react-native"
+import { Platform, StyleSheet, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { isFocusedRouteNotesHome } from "@/lib/navigation/isNotesHome"
@@ -92,7 +92,7 @@ function DrawerNoteTreeListComponent({
       setSelectedNoteId(noteId)
       closeDrawer()
       if (!isFocusedRouteNotesHome(segments)) {
-        router.push("/")
+        router.push(Platform.OS === "web" ? { pathname: "/", params: { note: noteId } } : "/")
       }
     },
     [closeDrawer, router, segments, setSelectedNoteId]
