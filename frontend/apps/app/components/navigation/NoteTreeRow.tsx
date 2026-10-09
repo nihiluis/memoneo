@@ -102,7 +102,7 @@ function NoteTreeRowComponent({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Options for ${getNoteTitle(item.note)}`}
-          className="h-8 w-8 items-center justify-center rounded-md hover:opacity-80 focus:opacity-80 active:opacity-60 web:cursor-pointer"
+          className="h-8 w-8 items-center justify-center rounded-md hover:bg-zinc-500/40 focus:bg-zinc-500/40 active:bg-zinc-500/60 web:cursor-pointer"
           onPress={() => onOpenNoteOptions(item.note)}
         >
           <Ellipsis size={18} color="#a1a1aa" />
