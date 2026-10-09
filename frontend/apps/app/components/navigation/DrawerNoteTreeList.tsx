@@ -1,4 +1,4 @@
-import { FlashList } from "@shopify/flash-list"
+import { FlashList, type FlashListRef } from "@shopify/flash-list"
 import type { Note } from "@memoneo/shared"
 import { useRouter, useSegments } from "expo-router"
 import { useAtom } from "jotai"
@@ -163,6 +163,17 @@ function DrawerNoteTreeListComponent({
     [expandedFolderIds, selectedFolderId, highlightedNoteId]
   )
 
+  const listRef = useRef<FlashListRef<TreeRow>>(null)
+  const selectedRowIndex = visibleRows.findIndex(
+    row => row.kind === "note" && row.note.id === highlightedNoteId
+  )
+  const scrollToSelection = useCallback(() => {
+    if (selectedRowIndex >= 0) {
+      listRef.current?.scrollToIndex({ index: selectedRowIndex, animated: false, viewPosition: 0.5 })
+    }
+  }, [selectedRowIndex])
+  useEffect(scrollToSelection, [scrollToSelection, drawerOpen])
+
   const isLoading = notesState.isLoading || foldersQuery.isLoading
 
   console.log("DrawerNoteTreeList render")
@@ -173,6 +184,8 @@ function DrawerNoteTreeListComponent({
         <MText className="px-2 text-zinc-400">No notes found.</MText>
       )}
       <FlashList
+        ref={listRef}
+        onLoad={scrollToSelection}
         contentContainerStyle={{ paddingBottom: 8 }}
         data={visibleRows}
         extraData={extraData}
