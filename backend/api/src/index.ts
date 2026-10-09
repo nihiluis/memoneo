@@ -30,7 +30,7 @@ const noteIdParamsSchema = t.Object({
 
 const noteFileDataSchemaBody = t.Object({
   title: t.String({ minLength: 1 }),
-  path: t.String({ minLength: 1 }),
+  path: t.String(),
   note_id: t.Optional(t.String({ format: "uuid" })),
 })
 
