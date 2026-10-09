@@ -56,7 +56,7 @@ function NoteTreeRowComponent({
         <Pressable
           accessibilityRole="button"
           onPress={() => onSelectFolder(item.folder.id)}
-          className="min-h-8 flex-1 flex-row items-center gap-2 rounded-md pr-2 hover:bg-zinc-500/25 focus:bg-zinc-500/25 active:bg-zinc-500/40 web:cursor-pointer"
+          className="min-h-8 flex-1 flex-row items-center gap-2 rounded-md px-2 hover:bg-zinc-500/25 focus:bg-zinc-500/25 active:bg-zinc-500/40 web:cursor-pointer"
         >
           <Folder size={18} color={selected ? "#f8fafc" : "#a1a1aa"} />
           <MText
