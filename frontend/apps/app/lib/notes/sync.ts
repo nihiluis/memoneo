@@ -49,6 +49,7 @@ export async function downloadRemoteNotes(auth: SyncAuth): Promise<SyncResult> {
   const remoteNotes = await getRemoteNotes(client)
   const localFiles = await listLocalMarkdownFiles()
   const localIds = new Set(localFiles.map(file => file.metadata.id).filter(Boolean))
+  const cache = await loadNoteCache()
   let downloaded = 0
 
   for (const note of remoteNotes) {
@@ -57,9 +58,14 @@ export async function downloadRemoteNotes(auth: SyncAuth): Promise<SyncResult> {
     }
 
     await writeRemoteNoteToLocal(note)
+    cache[note.id] = {
+      lastMd5Hash: await md5HashText(await decryptRemoteNote(note)),
+      lastSync: note.updated_at,
+    }
     downloaded += 1
   }
 
+  await saveNoteCache(cache)
   return { downloaded, uploaded: 0, updatedLocal: 0, updatedRemote: 0 }
 }
 

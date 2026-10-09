@@ -76,8 +76,8 @@ export async function writeLocalNote(
     fileName: title,
     path,
     text: serializeMarkdownNote({ ...note, title: note.title || title }, body),
-    createdAt: existing.find(file => file.id === id)?.createdAt ?? Date.now(),
-    updatedAt: Date.now(),
+    createdAt: Date.parse(note.created_at) || existing.find(file => file.id === id)?.createdAt || Date.now(),
+    updatedAt: Date.parse(note.updated_at) || Date.now(),
   })
 }
 export async function createLocalNote(title: string, body: string, path = "") {
