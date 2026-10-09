@@ -9,7 +9,7 @@ vi.doMock("lucide-react-native", () => ({ ChevronDown: () => null, ChevronRight:
 let segments = ["(tabs)"]
 const push = vi.fn()
 const closeDrawer = vi.fn()
-const note = { id: "note-1", title: "Test", file: { title: "Test", path: "" } } as Note
+const note = { id: "note-1", title: "Test", file: { title: "Test", path: "Diary/2024" } } as Note
 vi.doMock("expo-router", () => ({ useRouter: () => ({ push }), useSegments: () => segments }))
 vi.doMock("./appDrawerContext", () => ({ useAppDrawer: () => ({ closeDrawer, drawerOpen: true }) }))
 vi.doMock("@/lib/notes/query", () => ({ useNoteFoldersQuery: () => ({ data: [], isLoading: false }) }))
@@ -24,10 +24,20 @@ vi.doMock("@shopify/flash-list", () => ({
   ),
 }))
 const { DrawerNoteTreeList } = await import("./DrawerNoteTreeList")
-const { selectedNoteIdAtom } = await import("@/lib/notes/state")
+const { selectedNoteIdAtom, drawerExpandedFolderIdsAtom } = await import("@/lib/notes/state")
 const { render, fireEvent } = testingLibrary
 
 describe("DrawerNoteTreeList selection", () => {
+  it("allows collapsing ancestors of the selected note", () => {
+    segments = ["(tabs)"]
+    const store = createStore()
+    const result = render(<Provider store={store}><DrawerNoteTreeList onOpenNoteOptions={vi.fn()} /></Provider>)
+    expect(store.get(drawerExpandedFolderIdsAtom).has("Diary/2024")).toBe(true)
+    fireEvent.press(result.getAllByLabelText("Collapse folder")[1])
+    expect(store.get(drawerExpandedFolderIdsAtom).has("Diary/2024")).toBe(false)
+    fireEvent.press(result.getByLabelText("Collapse folder"))
+    expect(store.get(drawerExpandedFolderIdsAtom).has("Diary")).toBe(false)
+  })
   it("highlights the last-opened note only on the notes view", () => {
     segments = ["(tabs)"]
     const store = createStore()
