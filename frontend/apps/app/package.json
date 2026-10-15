@@ -27,7 +27,7 @@
     "axios": "^1.20.0",
     "clsx": "^2.1.1",
     "expo": "55.0.23",
-    "expo-audio": "~55.0.14",
+    "expo-audio": "~57.0.5",
     "expo-blur": "~55.0.14",
     "expo-constants": "~55.0.16",
     "expo-crypto": "~55.0.14",
