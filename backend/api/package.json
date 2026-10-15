@@ -31,7 +31,7 @@
   "dependencies": {
     "@elysia/openapi": "^1.4.15",
     "@elysiajs/node": "^1.4.5",
-    "@sinclair/typebox": "^0.34.49",
+    "@sinclair/typebox": "^0.34.52",
     "drizzle-orm": "^0.45.2",
     "dotenv": "^16.6.1",
     "elysia": "^1.4.28",
