@@ -11,7 +11,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.2.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/joho/godotenv v1.5.1
-	github.com/labstack/echo/v4 v4.15.4
+	github.com/labstack/echo/v4 v4.16.0
 	github.com/swaggo/echo-swagger v1.5.2
 	github.com/swaggo/swag/v2 v2.0.0-rc4
 	github.com/uptrace/bun v1.2.15
