@@ -8,7 +8,7 @@ tool github.com/swaggo/swag/v2/cmd/swag
 
 require (
 	github.com/go-playground/validator/v10 v10.22.0
-	github.com/gofrs/uuid/v5 v5.2.0
+	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.15.4
