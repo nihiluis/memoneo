@@ -245,19 +245,22 @@ func (api *API) performLogin(c echo.Context, mail string, password string) (stri
 		return "", err
 	}
 
+	api.setSessionCookie(c, token)
+	return token, nil
+}
+
+func (api *API) setSessionCookie(c echo.Context, token string) {
 	cookie := new(http.Cookie)
 	cookie.Name = "token"
 	cookie.Value = token
 	cookie.Path = "/"
 	cookie.Domain = api.authConfig.AuthCookieDomain
-	cookie.Expires = time.Now().Add(24 * time.Hour)
+	cookie.Expires = time.Now().Add(api.authConfig.SessionTTL())
 	cookie.Secure = true
 	cookie.SameSite = http.SameSiteLaxMode
 	cookie.HttpOnly = true
 
 	c.SetCookie(cookie)
-
-	return token, nil
 }
 
 // RegisterRequestBody is the JSON body of a request to the register handler.
@@ -387,24 +390,15 @@ func (api *API) checkAuth(c echo.Context) error {
 
 	claims := token.Claims.(jwt.MapClaims)
 	idString := claims["sub"]
-	firstName := claims["given_name"].(string)
-	lastName := claims["family_name"].(string)
-	mail := claims["email"].(string)
-
 	id, err := uuid.FromString(idString.(string))
 	if err != nil {
 		return err
 	}
-
 	authUser, err := api.auth.GetUserByID(id)
 	if err != nil {
-		authUser = &auth.User{
-			ID:        id,
-			FirstName: firstName,
-			LastName:  lastName,
-			Mail:      mail,
-		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Unable to retrieve user data."})
 	}
+	mail := authUser.Mail
 
 	fullUser := utils.MergeUser(authUser)
 
@@ -413,8 +407,13 @@ func (api *API) checkAuth(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Unable to retrieve user data."})
 	}
 
+	refreshedToken, err := api.auth.IssueToken(authUser)
+	if err != nil {
+		return err
+	}
+	api.setSessionCookie(c, refreshedToken)
 	return c.JSON(http.StatusOK, echo.Map{
-		"token":      token.Raw,
+		"token":      refreshedToken,
 		"enckey":     enckey,
 		"userId":     id,
 		"authUserId": id,

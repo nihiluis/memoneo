@@ -1,6 +1,9 @@
 package auth
 
-import "github.com/gofrs/uuid/v5"
+import (
+	"github.com/gofrs/uuid/v5"
+	"time"
+)
 
 // Auth struct holds all the dependencies required for the auth package. And exposes all services
 // provided by this package as its methods.
@@ -12,11 +15,13 @@ type Auth interface {
 	GetUserByID(uuid.UUID) (*User, error)
 	CheckToken(token string) error
 	Login(string, string) (string, error)
+	IssueToken(*User) (string, error)
 	PublicKey() interface{}
 	PublicJWK() map[string]string
 }
 
 type Config struct {
+	TokenTTL                 time.Duration
 	JWTSigningKey            string
 	Kid                      string
 	Issuer                   string
@@ -32,4 +37,12 @@ type User struct {
 	LastName  string    `json:"lastName"`
 	Mail      string    `json:"mail"`
 	Password  string    `json:"password"`
+}
+
+// SessionTTL supplies the default for configurations created without an explicit TTL.
+func (c *Config) SessionTTL() time.Duration {
+	if c.TokenTTL > 0 {
+		return c.TokenTTL
+	}
+	return 72 * time.Hour
 }

@@ -131,16 +131,20 @@ func (p *Postgres) Login(mail string, password string) (string, error) {
 		return "", err
 	}
 
+	return p.IssueToken(authUserFromDB(dbUser))
+}
+
+func (p *Postgres) IssueToken(user *auth.User) (string, error) {
 	now := time.Now()
 	claims := jwt.MapClaims{
-		"sub":         dbUser.ID.String(),
+		"sub":         user.ID.String(),
 		"iss":         p.config.Issuer,
 		"aud":         p.config.Audience,
-		"email":       dbUser.Mail,
-		"given_name":  dbUser.FirstName,
-		"family_name": dbUser.LastName,
+		"email":       user.Mail,
+		"given_name":  user.FirstName,
+		"family_name": user.LastName,
 		"iat":         now.Unix(),
-		"exp":         now.Add(24 * time.Hour).Unix(),
+		"exp":         now.Add(p.config.SessionTTL()).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

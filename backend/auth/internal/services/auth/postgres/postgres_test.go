@@ -128,3 +128,30 @@ func signTokenWithClaims(t *testing.T, privateKey *rsa.PrivateKey, claims jwt.Ma
 	}
 	return token
 }
+
+func TestIssueTokenLifetime(t *testing.T) {
+	key := generateTestPrivateKey(t)
+	for _, ttl := range []time.Duration{0, 7 * time.Hour} {
+		service := &Postgres{config: &auth.Config{Issuer: "test", Audience: "test", TokenTTL: ttl}, privateKey: key, publicKey: &key.PublicKey}
+		raw, err := service.IssueToken(&auth.User{ID: uuid.Must(uuid.NewV4()), Mail: "user@example.com"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := service.CheckToken(raw); err != nil {
+			t.Fatal(err)
+		}
+		token, _, err := jwt.NewParser().ParseUnverified(raw, jwt.MapClaims{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		issued, _ := token.Claims.GetIssuedAt()
+		expires, _ := token.Claims.GetExpirationTime()
+		want := ttl
+		if want == 0 {
+			want = 72 * time.Hour
+		}
+		if got := expires.Sub(issued.Time); got != want {
+			t.Fatalf("got lifetime %s, want %s", got, want)
+		}
+	}
+}

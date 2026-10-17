@@ -3,6 +3,7 @@ package configs
 import (
 	"os"
 	"strings"
+	"time"
 
 	"github.com/nihiluis/memoneo2/auth/internal/api"
 	"github.com/nihiluis/memoneo2/auth/internal/datastore"
@@ -43,7 +44,12 @@ func (cfg *Configs) Auth() *auth.Config {
 		kid = "memoneo-auth"
 	}
 
+	ttl, err := time.ParseDuration(envWithDefault("AUTH_TOKEN_TTL", "72h"))
+	if err != nil || ttl < time.Minute {
+		panic("AUTH_TOKEN_TTL must be a duration of at least 1m (for example 72h)")
+	}
 	return &auth.Config{
+		TokenTTL:                 ttl,
 		JWTSigningKey:            os.Getenv("AUTH_JWT_SIGNING_KEY"),
 		Kid:                      kid,
 		Issuer:                   envWithDefault("AUTH_JWT_ISSUER", "memoneo-auth"),

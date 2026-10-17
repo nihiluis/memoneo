@@ -37,3 +37,10 @@ The service also accepts raw PEM for local use, either PKCS#1
 
 Database migrations run automatically during service startup. Add new auth
 schema changes in `internal/migrations` using Bun's migration registry.
+
+Sessions default to 72 hours. Set `AUTH_TOKEN_TTL` to a Go duration (for example
+`168h`, minimum `1m`) to change both JWT and cookie lifetimes. Invalid settings
+fail startup. Successful `/auth` checks renew a still-valid session. The app
+refreshes while active and when returning to the foreground; after the full
+lifetime without a successful refresh, signing in again is required. Existing
+tokens keep their original expiry until refreshed.

@@ -58,6 +58,20 @@ describe("auth api", () => {
     )
   })
 
+  it.each([undefined, 500, 403])("preserves the token on a transient failure (%s)", async status => {
+    mockedAxios.get.mockRejectedValue(Object.assign(new Error("unavailable"), { response: status ? { status } : undefined }))
+    const { apiCheckAuth } = await import("./api")
+    await expect(apiCheckAuth("saved-token")).resolves.toMatchObject({
+      success: false, token: "saved-token", invalidToken: false,
+    })
+  })
+
+  it("identifies a rejected token", async () => {
+    mockedAxios.get.mockRejectedValue({ response: { status: 401 } })
+    const { apiCheckAuth } = await import("./api")
+    await expect(apiCheckAuth("expired")).resolves.toMatchObject({ success: false, invalidToken: true })
+  })
+
   it("logs in and stores the encryption key when returned", async () => {
     mockedAxios.post.mockResolvedValue({
       data: {

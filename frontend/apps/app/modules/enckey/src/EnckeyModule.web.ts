@@ -2,6 +2,26 @@ const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 let key: CryptoKey | null = null
 
+// CryptoKey is stored using IndexedDB structured cloning; raw key bytes and the
+// password are never exported or persisted by the browser session store.
+export function getUnlockedKey() {
+  return key
+}
+export function clearUnlockedKey() {
+  key = null
+}
+export function restoreUnlockedKey(saved: CryptoKey) {
+  if (
+    !saved || saved.type !== "secret" || saved.extractable ||
+    saved.algorithm.name !== "AES-GCM" ||
+    (saved.algorithm as AesKeyAlgorithm).length !== 256 ||
+    !saved.usages.includes("encrypt") || !saved.usages.includes("decrypt")
+  ) {
+    throw new Error("Invalid saved encryption key.")
+  }
+  key = saved
+}
+
 function decode(value: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(value.replace(/\s/g, "")), character =>
     character.charCodeAt(0)
@@ -18,9 +38,7 @@ function unlockedKey() {
 
 export default {
   ok: () => "web",
-  clearKey: () => {
-    key = null
-  },
+  clearKey: clearUnlockedKey,
   async createAndStoreKey(password: string, ciphertext: string, iv: string) {
     key = null
     let passwordKey: CryptoKey
