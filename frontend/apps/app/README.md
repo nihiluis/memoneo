@@ -61,9 +61,15 @@ service must accept the format produced by the browser. Sync the resulting note
 using the normal note actions.
 
 The browser encryption adapter supports both legacy and v2 password-protected
-keys and the existing AES-GCM note format. The unlocked key and auth token remain
-in memory; sign in again after a page reload to sync. Local notes and recordings
-remain available across reloads. Signing out clears the unlocked key.
+keys and the existing AES-GCM note format. The auth token and a non-exportable
+Web Crypto key are saved together in IndexedDB, scoped to the configured backend
+URLs. Reloading a page restores the key before verifying and refreshing the
+session. No password or raw encryption key bytes are saved. Signing out or
+clearing the session deletes both the saved token and key; expired sessions are
+removed on restore. The browser remains unlocked between visits until sign-out
+or session expiry. If browser storage is unavailable, login works in memory and
+a reload requires signing in again. Local notes and recordings remain available
+across reloads independently of login.
 
 Offline note editing works while the app is loaded. A service worker and
 installable PWA support are not included.

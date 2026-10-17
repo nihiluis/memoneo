@@ -16,7 +16,7 @@ export const noteInputSchema = z.object({
 
 export const noteFileDataSchema = z.object({
   title: z.string().min(1),
-  path: z.string().min(1),
+  path: z.string(),
   note_id: z.string().uuid().optional(),
 })
 

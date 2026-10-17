@@ -2,7 +2,6 @@ import { useEffect } from "react"
 import type { Note } from "@memoneo/shared"
 import { Menu, Save } from "lucide-react-native"
 import { Platform, Pressable, StyleSheet, TextInput, View } from "react-native"
-
 import { MText } from "@/components/reusables/MText"
 import { useAppDrawer } from "@/components/navigation/AppDrawer"
 import { useColorScheme } from "@/hooks/useColorScheme"
@@ -12,6 +11,7 @@ type NoteHeaderProps = {
   title: string
   onChangeTitle: (title: string) => void
   onSave: () => void
+  hasUnsavedChanges: boolean
   saveDisabled?: boolean
 }
 
@@ -20,6 +20,7 @@ export function NoteHeader({
   title,
   onChangeTitle,
   onSave,
+  hasUnsavedChanges,
   saveDisabled = false,
 }: NoteHeaderProps) {
   useEffect(() => {
@@ -70,6 +71,17 @@ export function NoteHeader({
         spellCheck={false}
         value={title}
       />
+      <MText
+        accessibilityLabel={hasUnsavedChanges ? "Unsaved changes" : "Saved"}
+        accessibilityLiveRegion="polite"
+        accessibilityRole="text"
+        className="mr-2 text-xs font-medium"
+        numberOfLines={1}
+        pointerEvents="none"
+        style={{ color: hasUnsavedChanges ? "#f87171" : "#3b82f6" }}
+      >
+        {hasUnsavedChanges ? "Unsaved changes" : "Saved"}
+      </MText>
       <Pressable
         accessibilityLabel="Save note"
         accessibilityRole="button"

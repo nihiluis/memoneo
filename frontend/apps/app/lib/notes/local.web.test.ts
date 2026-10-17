@@ -36,6 +36,18 @@ describe("browser note persistence", () => {
     expect(file.metadata).toMatchObject({ id: "remote-id", version: 7 })
     expect((await listLocalNotes())[0].id).toBe("remote-id")
   })
+  it("preserves downloaded creation and modification timestamps", async () => {
+    const note = await createLocalNote("Remote", "body")
+    await writeLocalNote({
+      ...note, id: "remote-id",
+      created_at: "2021-01-02T03:04:05.000Z",
+      updated_at: "2024-05-06T07:08:09.000Z",
+    }, "downloaded body")
+    expect((await listLocalNotes())[0]).toMatchObject({
+      created_at: "2021-01-02T03:04:05.000Z",
+      updated_at: "2024-05-06T07:08:09.000Z",
+    })
+  })
   it("creates unique files and empty folders without overwriting existing content", async () => {
     await createLocalNote("Same", "one")
     await createLocalNote("Same", "two")

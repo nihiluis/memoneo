@@ -8,6 +8,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set the external PostgreSQL DATABASE_URL in Dokploy}
       ALLOW_ORIGINS: ${APP_ORIGIN:?Set APP_ORIGIN in Dokploy}
       AUTH_COOKIE_DOMAIN: ""
+      AUTH_TOKEN_TTL: ${AUTH_TOKEN_TTL:-72h}
       AUTH_JWT_KID: ${AUTH_KID:-memoneo-auth}
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-memoneo-auth}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-memoneo}

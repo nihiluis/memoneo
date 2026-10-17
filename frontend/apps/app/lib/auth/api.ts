@@ -13,6 +13,7 @@ export type Enckey = {
 export interface AuthResult {
   success: boolean
   errorMessage: string
+  invalidToken?: boolean
   error?: Error
   enckey?: Enckey
   token: string
@@ -48,7 +49,8 @@ export async function apiCheckAuth(
   if (error || !res.data.hasOwnProperty("token")) {
     return {
       success: false,
-      token: "",
+      token: existingToken,
+      invalidToken: (error as { response?: { status?: number } } | undefined)?.response?.status === 401,
       enckey: undefined,
       userId: "",
       errorMessage: error?.message ?? "",

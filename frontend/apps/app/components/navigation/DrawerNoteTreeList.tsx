@@ -1,9 +1,9 @@
-import { FlashList } from "@shopify/flash-list"
+import { FlashList, type FlashListRef } from "@shopify/flash-list"
 import type { Note } from "@memoneo/shared"
 import { useRouter, useSegments } from "expo-router"
 import { useAtom } from "jotai"
-import { memo, useCallback, useEffect, useMemo } from "react"
-import { StyleSheet, View } from "react-native"
+import { memo, useCallback, useEffect, useMemo, useRef } from "react"
+import { Platform, StyleSheet, View } from "react-native"
 
 import { MText } from "@/components/reusables/MText"
 import { isFocusedRouteNotesHome } from "@/lib/navigation/isNotesHome"
@@ -62,10 +62,6 @@ function DrawerNoteTreeListComponent({
     () => getSelectedFolderIds(notes, selectedNoteId),
     [notes, selectedNoteId]
   )
-  const selectedFolderIdSet = useMemo(
-    () => new Set(selectedFolderIds),
-    [selectedFolderIds]
-  )
 
   const visibleRows = useMemo(() => {
     if (!drawerOpen) {
@@ -74,7 +70,11 @@ function DrawerNoteTreeListComponent({
     return flattenVisibleTree(noteTree, expandedFolderIds)
   }, [drawerOpen, noteTree, expandedFolderIds])
 
+  const revealedSelection = useRef("")
   useEffect(() => {
+    const selectionKey = JSON.stringify([selectedNoteId, selectedFolderIds])
+    if (revealedSelection.current === selectionKey) return
+    revealedSelection.current = selectionKey
     if (selectedFolderIds.length === 0) {
       return
     }
@@ -84,7 +84,7 @@ function DrawerNoteTreeListComponent({
       selectedFolderIds.forEach(folderId => next.add(folderId))
       return setsAreEqual(current, next) ? current : next
     })
-  }, [selectedFolderIds, setExpandedFolderIds])
+  }, [selectedNoteId, selectedFolderIds, setExpandedFolderIds])
 
   const selectNote = useCallback(
     (noteId: string) => {
@@ -92,7 +92,7 @@ function DrawerNoteTreeListComponent({
       setSelectedNoteId(noteId)
       closeDrawer()
       if (!isFocusedRouteNotesHome(segments)) {
-        router.push("/")
+        router.push(Platform.OS === "web" ? { pathname: "/", params: { note: noteId } } : "/")
       }
     },
     [closeDrawer, router, segments, setSelectedNoteId]
@@ -118,9 +118,6 @@ function DrawerNoteTreeListComponent({
       setExpandedFolderIds((current: Set<string>) => {
         const next = new Set(current)
         if (next.has(folderId)) {
-          if (selectedFolderIdSet.has(folderId)) {
-            return current
-          }
           next.delete(folderId)
         } else {
           next.add(folderId)
@@ -128,7 +125,7 @@ function DrawerNoteTreeListComponent({
         return next
       })
     },
-    [selectedFolderIdSet, setExpandedFolderIds]
+    [setExpandedFolderIds]
   )
 
   const renderTreeRow = useCallback(
@@ -166,6 +163,17 @@ function DrawerNoteTreeListComponent({
     [expandedFolderIds, selectedFolderId, highlightedNoteId]
   )
 
+  const listRef = useRef<FlashListRef<TreeRow>>(null)
+  const selectedRowIndex = visibleRows.findIndex(
+    row => row.kind === "note" && row.note.id === highlightedNoteId
+  )
+  const scrollToSelection = useCallback(() => {
+    if (selectedRowIndex >= 0) {
+      listRef.current?.scrollToIndex({ index: selectedRowIndex, animated: false, viewPosition: 0.5 })
+    }
+  }, [selectedRowIndex])
+  useEffect(scrollToSelection, [scrollToSelection, drawerOpen])
+
   const isLoading = notesState.isLoading || foldersQuery.isLoading
 
   console.log("DrawerNoteTreeList render")
@@ -176,6 +184,8 @@ function DrawerNoteTreeListComponent({
         <MText className="px-2 text-zinc-400">No notes found.</MText>
       )}
       <FlashList
+        ref={listRef}
+        onLoad={scrollToSelection}
         contentContainerStyle={{ paddingBottom: 8 }}
         data={visibleRows}
         extraData={extraData}
