@@ -6,6 +6,7 @@ import {
   type NoteFileData,
   type NoteInput,
 } from "@memoneo/shared"
+import { transferId, type TransferAction } from "./transfer"
 import { randomUUID } from "expo-crypto"
 
 import enckey from "@/modules/enckey"
@@ -24,7 +25,7 @@ import {
 } from "./local"
 import { md5HashText } from "./hash"
 
-type SyncAuth = {
+export type SyncAuth = {
   token: string
   userId: string
 }
@@ -44,7 +45,7 @@ type SingleNoteSyncOptions = {
   confirmOverwrite?: (warning: SingleNoteOverwriteWarning) => Promise<boolean>
 }
 
-export async function downloadRemoteNotes(auth: SyncAuth): Promise<SyncResult> {
+export async function downloadRemoteNotes(auth: SyncAuth, selectedIds?: ReadonlySet<string>): Promise<SyncResult> {
   const client = createApiClient(auth.token, getApiUrl(""))
   const remoteNotes = await getRemoteNotes(client)
   const localFiles = await listLocalMarkdownFiles()
@@ -53,7 +54,7 @@ export async function downloadRemoteNotes(auth: SyncAuth): Promise<SyncResult> {
   let downloaded = 0
 
   for (const note of remoteNotes) {
-    if (note.archived || localIds.has(note.id)) {
+    if (note.archived || localIds.has(note.id) || (selectedIds && !selectedIds.has(note.id))) {
       continue
     }
 
@@ -69,13 +70,13 @@ export async function downloadRemoteNotes(auth: SyncAuth): Promise<SyncResult> {
   return { downloaded, uploaded: 0, updatedLocal: 0, updatedRemote: 0 }
 }
 
-export async function uploadLocalNotes(auth: SyncAuth): Promise<SyncResult> {
+export async function uploadLocalNotes(auth: SyncAuth, selectedIds?: ReadonlySet<string>): Promise<SyncResult> {
   const client = createApiClient(auth.token, getApiUrl(""))
   const localFiles = await listLocalMarkdownFiles()
   const cache = await loadNoteCache()
   let uploaded = 0
 
-  for (const file of localFiles.filter(file => !file.metadata.id)) {
+  for (const file of localFiles.filter(file => !file.metadata.id && (!selectedIds || selectedIds.has(transferId(file))))) {
     const id = randomUUID()
     const note = await localFileToNewNote(file, id, auth.userId)
     const { data, error } = await client.upsertNotes([note])
@@ -106,7 +107,7 @@ export async function uploadLocalNotes(auth: SyncAuth): Promise<SyncResult> {
   return { downloaded: 0, uploaded, updatedLocal: 0, updatedRemote: 0 }
 }
 
-export async function syncNotes(auth: SyncAuth): Promise<SyncResult> {
+export async function syncNotes(auth: SyncAuth, selectedIds?: ReadonlySet<string>): Promise<SyncResult> {
   const client = createApiClient(auth.token, getApiUrl(""))
   const result: SyncResult = {
     downloaded: 0,
@@ -115,10 +116,10 @@ export async function syncNotes(auth: SyncAuth): Promise<SyncResult> {
     updatedRemote: 0,
   }
 
-  const downloadResult = await downloadRemoteNotes(auth)
+  const downloadResult = await downloadRemoteNotes(auth, selectedIds)
   result.downloaded += downloadResult.downloaded
 
-  const uploadResult = await uploadLocalNotes(auth)
+  const uploadResult = await uploadLocalNotes(auth, selectedIds)
   result.uploaded += uploadResult.uploaded
 
   const remoteNotes = await getRemoteNotes(client)
@@ -128,6 +129,7 @@ export async function syncNotes(auth: SyncAuth): Promise<SyncResult> {
   const localUpdatedIds = new Set<string>()
 
   for (const file of localFiles) {
+    if (selectedIds && !selectedIds.has(transferId(file))) continue
     const id = file.metadata.id
     if (!id) {
       continue
@@ -197,6 +199,7 @@ export async function syncNotes(auth: SyncAuth): Promise<SyncResult> {
   }
 
   for (const file of localFiles) {
+    if (selectedIds && !selectedIds.has(transferId(file))) continue
     const id = file.metadata.id
     if (!id || localUpdatedIds.has(id)) {
       continue
@@ -453,4 +456,13 @@ function noteFileData(file: MarkdownFileInfo, noteId: string): NoteFileData {
     path: file.path,
     note_id: noteId,
   }
+}
+
+export async function listTransferNotes(auth: SyncAuth, action: TransferAction) {
+  const { getTransferNotes } = await import("./transfer")
+  const [files, remote] = await Promise.all([
+    listLocalMarkdownFiles(),
+    getRemoteNotes(createApiClient(auth.token, getApiUrl(""))),
+  ])
+  return getTransferNotes(action, files, remote)
 }

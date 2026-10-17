@@ -14,14 +14,18 @@ import { NewNoteDrawerAction } from "./actions/NewNoteDrawerAction"
 import { SettingsDrawerAction } from "./actions/SettingsDrawerAction"
 import { SyncDrawerAction } from "./actions/SyncDrawerAction"
 import { UploadDrawerAction } from "./actions/UploadDrawerAction"
-import { useSyncDrawerMutation } from "./actions/mutations"
+import type { TransferAction } from "@/lib/notes/transfer"
 
 export function DrawerActions() {
   const auth = useAtomValue(authAtom)
   const router = useRouter()
   const { closeDrawer } = useAppDrawer()
   const selectedFolderId = useAtomValue(selectedFolderIdAtom)
-  const { isSyncing, runSyncAction } = useSyncDrawerMutation()
+  const isSyncing = false
+  const runSyncAction = (action: TransferAction) => {
+    closeDrawer()
+    router.push({ pathname: "/transfer", params: { action } })
+  }
 
   return (
     <View>

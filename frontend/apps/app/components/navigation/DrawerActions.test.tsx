@@ -35,6 +35,6 @@ describe("DrawerActions", () => {
     const labels = result.UNSAFE_getAllByType("Text").map(node => node.props.children)
     expect(labels).toEqual(["Settings", "Upload", "Sync", "Download"])
     for (const label of ["Upload", "Sync", "Download"]) fireEvent.press(result.getByText(label))
-    expect(runSyncAction.mock.calls).toEqual([["upload"], ["sync"], ["download"]])
+    expect(push.mock.calls.slice(-3)).toEqual(["upload", "sync", "download"].map(action => [{ pathname: "/transfer", params: { action } }]))
   })
 })

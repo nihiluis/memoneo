@@ -107,19 +107,19 @@ export function useSyncDrawerMutation() {
   const syncInProgressRef = useRef(false)
 
   const syncMutation = useMutation({
-    mutationFn: async (action: SyncMutationKind) => {
+    mutationFn: async ({ action, selectedIds }: { action: SyncMutationKind; selectedIds?: ReadonlySet<string> }) => {
       if (!auth.isAuthenticated || !token) {
         throw new Error("Sign in from Settings before syncing notes.")
       }
 
       const syncAuth = { token, userId: auth.user.id }
       if (action === "download") {
-        return downloadRemoteNotes(syncAuth)
+        return downloadRemoteNotes(syncAuth, selectedIds)
       }
       if (action === "upload") {
-        return uploadLocalNotes(syncAuth)
+        return uploadLocalNotes(syncAuth, selectedIds)
       }
-      return syncNotes(syncAuth)
+      return syncNotes(syncAuth, selectedIds)
     },
     onSuccess: async () => {
       await Promise.all([
@@ -160,12 +160,12 @@ export function useSyncDrawerMutation() {
       }
 
       syncInProgressRef.current = true
-      syncMutation.mutate(action)
+      syncMutation.mutate({ action })
     },
     [syncMutation]
   )
 
   const isSyncing = syncMutation.isPending || syncInProgressRef.current
 
-  return { isSyncing, runSyncAction }
+  return { isSyncing, runSyncAction, runSelected: syncMutation.mutateAsync }
 }
