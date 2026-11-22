@@ -46,7 +46,7 @@
     "expo-symbols": "~55.0.8",
     "expo-system-ui": "~55.0.17",
     "expo-web-browser": "~55.0.15",
-    "jotai": "^2.10.3",
+    "jotai": "^3.0.1",
     "lucide-react-native": "^1.14.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
