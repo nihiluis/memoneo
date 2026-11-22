@@ -7,8 +7,8 @@
   "scripts": {
     "prebuild": "pnpm --filter @memoneo/shared build",
     "build": "rimraf dist && tsc -b",
-    "build:binary": "pnpm run build && rimraf dist-bin && pkg . --targets node24-linux-x64 --no-bytecode --public-packages \"*\" --output dist-bin/memoneo-linux-x64 && pkg . --targets node24-macos-x64 --no-bytecode --no-signature --public-packages \"*\" --output dist-bin/memoneo-macos-x64 && pkg . --targets node24-macos-arm64 --no-bytecode --no-signature --public-packages \"*\" --output dist-bin/memoneo-macos-arm64 && pkg . --targets node24-win-x64 --no-bytecode --public-packages \"*\" --output dist-bin/memoneo-win-x64.exe",
-    "build:binary:linux": "pnpm run build && rimraf dist-bin && pkg . --targets node24-linux-x64 --no-bytecode --public-packages \"*\" --output dist-bin/memoneo-linux-x64",
+    "build:binary": "pnpm run build && pnpm run bundle && rimraf dist-bin && pkg dist-bundle --no-bytecode --public-packages \"*\" --targets node24-linux-x64 --output dist-bin/memoneo-linux-x64 && pkg dist-bundle --no-bytecode --public-packages \"*\" --targets node24-macos-x64 --output dist-bin/memoneo-macos-x64 && pkg dist-bundle --no-bytecode --public-packages \"*\" --targets node24-macos-arm64 --output dist-bin/memoneo-macos-arm64 && pkg dist-bundle --no-bytecode --public-packages \"*\" --targets node24-win-x64 --output dist-bin/memoneo-win-x64.exe",
+    "build:binary:linux": "pnpm run build && pnpm run bundle && rimraf dist-bin && pkg dist-bundle --no-bytecode --public-packages \"*\" --targets node24-linux-x64 --output dist-bin/memoneo-linux-x64",
     "dev": "node ./bin/dev.js",
     "dev:sync": "node ./bin/dev.js sync",
     "dev:upload": "node ./bin/dev.js upload",
@@ -22,7 +22,9 @@
     "upload": "node ./bin/run.js upload",
     "download": "node ./bin/run.js download",
     "delete": "node ./bin/run.js delete",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bundle": "node scripts/bundle.mjs",
+    "build:binary:macos-arm64": "pnpm run build && pnpm run bundle && rimraf dist-bin && pkg dist-bundle --no-bytecode --public-packages \"*\" --targets node24-macos-arm64 --output dist-bin/memoneo-macos-arm64"
   },
   "bin": {
     "memoneo": "./bin/run.js"
@@ -52,6 +54,7 @@
     "@types/node": "^22.0.0",
     "@types/uuid": "^10.0.0",
     "@yao-pkg/pkg": "^6.19.0",
+    "esbuild": "0.28.2",
     "tslib": "^2.6.3",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"
@@ -59,16 +62,13 @@
   "oclif": {
     "bin": "memoneo",
     "dirname": "memoneo",
-    "commands": "./dist/commands",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/commands.js",
+      "identifier": "COMMANDS"
+    },
     "plugins": [],
     "topicSeparator": " "
-  },
-  "pkg": {
-    "assets": [
-      "config.json",
-      "dist/**/*"
-    ],
-    "outputPath": "dist-bin"
   },
   "engines": {
     "node": ">=12.0.0"

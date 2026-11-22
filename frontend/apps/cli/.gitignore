@@ -17,3 +17,5 @@ _backups/
 *.zip
 _old_key_backup
 tsconfig.tsbuildinfo
+/dist-bundle
+/dist-bin

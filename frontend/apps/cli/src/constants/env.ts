@@ -1,7 +1,8 @@
 import { createRequire } from "module"
+import { loadAppConfig } from "./appConfig.js"
 const require = createRequire(import.meta.url)
 
-const config = require("../../config.json")
+const config = loadAppConfig(process.cwd(), () => require("../../config.json"))
 
 export const DEV = process.env.NODE_ENV === "development"
 

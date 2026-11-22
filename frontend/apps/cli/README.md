@@ -8,8 +8,13 @@ To use the CLI, you currently need to build it from source with your own configu
 pnpm run build
 ```
 
+### Standalone binary
+`pnpm run build:binary` bundles the CLI with esbuild (`scripts/bundle.mjs`) and packs it with pkg into `dist-bin/` for Linux, macOS and Windows. `pnpm run build:binary:macos-arm64` builds only the Apple Silicon binary. macOS binaries are only signed when built on macOS; unsigned ones are refused by Apple Silicon Macs.
+
+Commands are registered in `src/commands.ts` (oclif explicit discovery); add new commands there.
+
 ### Build options
-Building the CLI requires a `config.json` file in your working directory with default settings if one doesn't exist. The default configuration looks like:
+The CLI reads `config.json` from your working directory, then falls back to the `config.json` next to the package, then to the defaults. The CLI creates a default one in your working directory if none exists. The default configuration looks like:
 
 ```json
 {

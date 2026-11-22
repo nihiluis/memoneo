@@ -1,5 +1,6 @@
 import protect from "await-protect"
 import * as fs from "fs/promises"
+import { DEFAULT_APP_CONFIG } from "../constants/appConfig.js"
 
 export interface MemoneoInternalConfig {
   mail: string
@@ -39,23 +40,7 @@ export async function loadConfig(): Promise<MemoneoConfig> {
 
     return config
   } else {
-    const defaultConfig: MemoneoConfig & any = {
-      baseDirectory: "_testdata",
-      defaultDirectory: "_unassigned",
-      basePath: {
-        dev: "/",
-        prod: "/web",
-      },
-      productName: "Memoneo",
-      authApiUrl: {
-        dev: "http://localhost:8089",
-        prod: "https://auth.memoneo2.yourdomain.com",
-      },
-      apiUrl: {
-        dev: "http://localhost:8094",
-        prod: "https://api.memoneo2.yourdomain.com",
-      },
-    }
+    const defaultConfig = DEFAULT_APP_CONFIG
     await fs.writeFile("./config.json", JSON.stringify(defaultConfig), {
       encoding: "utf-8",
     })
